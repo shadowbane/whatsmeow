@@ -33,7 +33,7 @@ func Get() *Config {
 	flag.StringVar(&conf.appEnv, "appenv", getenv("APP_ENV", "production"), "Application Environment")
 
 	/** Database Configurations **/
-	flag.StringVar(&conf.dbName, "dbname", getenv("DB_DATABASE", "microservice_sekolah"), "DB name")
+	flag.StringVar(&conf.dbName, "dbname", getenv("DB_DATABASE", "meow.db"), "DB name")
 
 	/** API Port Config **/
 	flag.StringVar(&conf.apiPort, "apiPort", getenv("API_PORT", "8080"), "API Port")
@@ -55,6 +55,10 @@ func (c *Config) GetAppEnv() string {
 	return c.appEnv
 }
 
+func (c *Config) GetDBConnStr() string {
+	return "file:" + c.dbName + "?_foreign_keys=on"
+}
+
 func (c *Config) GetAPIPort() string {
 	return ":" + c.apiPort
 }
@@ -67,7 +71,7 @@ func (c *Config) ConnectToDatabase() *sqlstore.Container {
 	}
 
 	dbLog := waLog.Stdout("Database", logLevel, true)
-	db, err := sqlstore.New("sqlite3", "file:wadb.db?_foreign_keys=on", dbLog)
+	db, err := sqlstore.New("sqlite3", c.GetDBConnStr(), dbLog)
 	if err != nil {
 		zap.S().Panicf("Failed to connect to database: %s", err)
 		panic(err)
