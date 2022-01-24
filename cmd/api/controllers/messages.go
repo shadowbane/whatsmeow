@@ -24,8 +24,14 @@ type ApiError struct {
 }
 
 type returnData struct {
-	Success bool        `json:"success"`
-	Data    interface{} `json:"data"`
+	Success bool            `json:"success"`
+	Data    detailedMessage `json:"data"`
+}
+
+type detailedMessage struct {
+	Message   string `json:"message"`
+	To        string `json:"to"`
+	MessageId string `json:"messageId"`
 }
 
 func MessageIndex(app *application.Application) httprouter.Handle {
@@ -37,16 +43,24 @@ func MessageIndex(app *application.Application) httprouter.Handle {
 			}
 		}(r.Body)
 
-		newJid := types.NewJID("628566526863", "s.whatsapp.net")
+		to := r.URL.Query().Get("destination")
+		message := r.URL.Query().Get("message")
+		newMessageId := whatsmeow.GenerateMessageID()
+
+		if (len(to) == 0) || (len(message) == 0) {
+			writeErrorResponse(w, 422, "Invalid Parameter Supplied")
+			return
+		}
+
+		newJid := types.NewJID(to, "s.whatsapp.net")
 
 		newMessage := &waProto.Message{
 			ExtendedTextMessage: &waProto.ExtendedTextMessage{
-				Text: proto.String(r.URL.Query().Get("message")),
+				Text: proto.String(message),
 			},
 		}
 
-		newMessageId := whatsmeow.GenerateMessageID()
-		zap.S().Debugf("Sending a message with ID: %s and content: %s", newMessageId, newMessage.String())
+		zap.S().Debugf("Sending a message with ID: %s and content: %s to %s", newMessageId, newMessage.String(), to)
 		_, err := app.Meow.Client.SendMessage(newJid, newMessageId, newMessage)
 		if err != nil {
 			zap.S().Errorf(err.Error())
@@ -54,9 +68,14 @@ func MessageIndex(app *application.Application) httprouter.Handle {
 			return
 		}
 
-		var formattedValues returnData
-		formattedValues.Success = true
-		formattedValues.Data = []string{"Meow, World"}
+		formattedValues := returnData{
+			Success: true,
+			Data: detailedMessage{
+				Message:   message,
+				To:        to,
+				MessageId: newMessageId,
+			},
+		}
 
 		response, _ := json.Marshal(formattedValues)
 		_, err = w.Write(response)
