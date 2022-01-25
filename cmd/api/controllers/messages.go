@@ -4,11 +4,8 @@ import (
 	"encoding/json"
 	"github.com/julienschmidt/httprouter"
 	"go.mau.fi/whatsmeow"
-	waProto "go.mau.fi/whatsmeow/binary/proto"
-	"go.mau.fi/whatsmeow/types"
 	"go.uber.org/zap"
 	"gomeow/pkg/application"
-	"google.golang.org/protobuf/proto"
 	"io"
 	"log"
 	"net/http"
@@ -24,8 +21,8 @@ type ApiError struct {
 }
 
 type returnData struct {
-	Success bool            `json:"success"`
-	Data    detailedMessage `json:"data"`
+	Success bool                       `json:"success"`
+	Data    application.PendingMessage `json:"data"`
 }
 
 type detailedMessage struct {
@@ -52,33 +49,23 @@ func MessageIndex(app *application.Application) httprouter.Handle {
 			return
 		}
 
-		newJid := types.NewJID(to, "s.whatsapp.net")
+		zap.S().Debugf("Queueing message with ID: %s and content: %s to %s", newMessageId, message, to)
 
-		newMessage := &waProto.Message{
-			ExtendedTextMessage: &waProto.ExtendedTextMessage{
-				Text: proto.String(message),
-			},
+		pendingMessage := application.PendingMessage{
+			To:        to,
+			MessageId: newMessageId,
+			Message:   message,
 		}
 
-		zap.S().Debugf("Sending a message with ID: %s and content: %s to %s", newMessageId, newMessage.String(), to)
-		_, err := app.Meow.Client.SendMessage(newJid, newMessageId, newMessage)
-		if err != nil {
-			zap.S().Errorf(err.Error())
-			writeErrorResponse(w, http.StatusInternalServerError, err.Error())
-			return
-		}
+		app.Queue.Add(pendingMessage)
 
 		formattedValues := returnData{
 			Success: true,
-			Data: detailedMessage{
-				Message:   message,
-				To:        to,
-				MessageId: newMessageId,
-			},
+			Data:    pendingMessage,
 		}
 
 		response, _ := json.Marshal(formattedValues)
-		_, err = w.Write(response)
+		_, err := w.Write(response)
 		if err != nil {
 			zap.S().Errorf(err.Error())
 			writeErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")

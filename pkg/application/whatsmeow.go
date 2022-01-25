@@ -8,17 +8,27 @@ import (
 	waProto "go.mau.fi/whatsmeow/binary/proto"
 	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/store/sqlstore"
+	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 	waLog "go.mau.fi/whatsmeow/util/log"
 	"go.uber.org/zap"
 	"gomeow/pkg/config"
+	"google.golang.org/protobuf/proto"
+	"math/rand"
 	"os"
+	"time"
 )
 
 type Meow struct {
 	DeviceStore *store.Device
 	ClientLog   waLog.Logger
 	Client      *whatsmeow.Client
+}
+
+type PendingMessage struct {
+	Message   string `json:"message"`
+	To        string `json:"to"`
+	MessageId string `json:"messageId"`
 }
 
 func Init(c *config.Config, container *sqlstore.Container) *Meow {
@@ -92,6 +102,28 @@ func (m *Meow) Connect() {
 
 func (m *Meow) Exit() {
 	m.Client.Disconnect()
+}
+
+func (m *Meow) SendMessage(message PendingMessage) error {
+	// add random delay
+	r := rand.Intn(10)
+	time.Sleep(time.Duration(r) * time.Second)
+	zap.S().Debugf("Sending message with ID: %s and content: %s to: %s", message.MessageId, message.Message, message.To)
+
+	newJid := types.NewJID(message.To, "s.whatsapp.net")
+	newMessage := &waProto.Message{
+		ExtendedTextMessage: &waProto.ExtendedTextMessage{
+			Text: proto.String(message.Message),
+		},
+	}
+
+	_, err := m.Client.SendMessage(newJid, message.MessageId, newMessage)
+	if err != nil {
+		zap.S().Errorf(err.Error())
+		return err
+	}
+
+	return nil
 }
 
 func eventHandler(evt interface{}) {
