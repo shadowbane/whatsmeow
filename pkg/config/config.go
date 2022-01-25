@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"go.uber.org/zap"
+	"gomeow/pkg/logger"
 	"os"
 
 	"go.mau.fi/whatsmeow/store/sqlstore"
@@ -39,6 +40,8 @@ func Get() *Config {
 	flag.StringVar(&conf.apiPort, "apiPort", getenv("API_PORT", "8080"), "API Port")
 
 	flag.Parse()
+
+	logger.Init(conf.appEnv)
 
 	return conf
 }

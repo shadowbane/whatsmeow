@@ -8,13 +8,15 @@ import (
 	"gomeow/cmd/api/router"
 	"gomeow/pkg/application"
 	"gomeow/pkg/exithandler"
-	"gomeow/pkg/logger"
 	"gomeow/pkg/server"
+	"runtime"
 )
 
 func main() {
-	logger.Init()
-	zap.S().Info("Starting Application")
+	var cpuCount = runtime.NumCPU()
+	if cpuCount > 1 {
+		runtime.GOMAXPROCS(cpuCount)
+	}
 
 	if err := godotenv.Load(); err != nil {
 		zap.S().Warnf("Failed to load env vars!")
@@ -37,6 +39,13 @@ func main() {
 		if err := srv.Start(); err != nil {
 			zap.S().Fatal(err.Error())
 		}
+	}()
+
+	// queue runner
+	// will run every second
+	go func() {
+		zap.S().Info("starting queue runner")
+		app.RunQueue()
 	}()
 
 	exithandler.Init(func() {

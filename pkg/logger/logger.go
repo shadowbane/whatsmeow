@@ -31,7 +31,7 @@ func createLogFile(l LogFile) {
 
 }
 
-func initZapLog() *zap.Logger {
+func initZapLog(logLevel zapcore.Level) *zap.Logger {
 	t := time.Now()
 	formattedTime := t.Format("2006-01-02")
 	logfile := LogFile{
@@ -41,6 +41,7 @@ func initZapLog() *zap.Logger {
 	createLogFile(logfile)
 
 	config := zap.NewDevelopmentConfig()
+	config.Level = zap.NewAtomicLevelAt(logLevel)
 	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	config.EncoderConfig.TimeKey = "timestamp"
 	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
@@ -56,8 +57,9 @@ func initZapLog() *zap.Logger {
 	return zapLogger
 }
 
-func Init() {
-	logManager := initZapLog()
+func Init(environment string) {
+	logLevel := getLogLevel(environment)
+	logManager := initZapLog(logLevel)
 	zap.ReplaceGlobals(logManager)
 	defer func(logManager *zap.Logger) {
 		err := logManager.Sync()
@@ -65,4 +67,15 @@ func Init() {
 
 		}
 	}(logManager) // flushes buffer, if any
+}
+
+func getLogLevel(environment string) zapcore.Level {
+	switch environment {
+	case "local":
+		return zapcore.DebugLevel
+	case "debug":
+		return zapcore.DebugLevel
+	default:
+		return zapcore.InfoLevel
+	}
 }
