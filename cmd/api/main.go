@@ -3,6 +3,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 	"gomeow/cmd/api/router"
@@ -18,14 +19,22 @@ func main() {
 		runtime.GOMAXPROCS(cpuCount)
 	}
 
+	// load .env
 	if err := godotenv.Load(); err != nil {
-		zap.S().Warnf("Failed to load env vars!")
+		fmt.Printf("Error loading .env file: %v\n", err)
 	}
 
+	// start application
 	app, err := application.Start()
 	if err != nil {
 		zap.S().Fatal(err.Error())
 	}
+
+	// added event handler when message is read
+	app.Meow.Client.AddEventHandler(app.AddReadEventHandler)
+
+	// Load queue
+	go app.LoadQueue()
 
 	srv := server.
 		Get().
@@ -33,6 +42,7 @@ func main() {
 		WithRouter(router.Get(app)).
 		WithErrLogger(zap.S())
 
+	// start the server
 	go func() {
 		zap.S().Info("starting server at ", app.Cfg.GetAPIPort())
 

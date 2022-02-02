@@ -2,29 +2,29 @@ package config
 
 import (
 	"flag"
+	"fmt"
+	"github.com/jinzhu/gorm"
+	"go.mau.fi/whatsmeow/store/sqlstore"
+	waLog "go.mau.fi/whatsmeow/util/log"
 	"go.uber.org/zap"
 	"gomeow/pkg/logger"
 	"os"
 
-	"go.mau.fi/whatsmeow/store/sqlstore"
-	waLog "go.mau.fi/whatsmeow/util/log"
-
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 type Config struct {
 	appEnv string
-	dbUser string
-	dbPswd string
-	dbHost string
-	dbPort string
 	dbName string
 
-	apiPort string
-	migrate string
+	msgstoreUser string
+	msgstorePswd string
+	msgstorePort string
+	msgstoreHost string
+	msgstoreName string
 
-	redisHost string
-	redisPort string
+	apiPort string
 }
 
 func Get() *Config {
@@ -38,6 +38,16 @@ func Get() *Config {
 
 	/** API Port Config **/
 	flag.StringVar(&conf.apiPort, "apiPort", getenv("API_PORT", "8080"), "API Port")
+
+	/**
+	 * Message Store Database
+	 * Using MySQL database
+	 */
+	flag.StringVar(&conf.msgstoreUser, "msgstoreUser", getenv("DB_MSGSTORE_USERNAME", "root"), "Message store DB user name")
+	flag.StringVar(&conf.msgstorePswd, "msgstorePswd", getenv("DB_MSGSTORE_PASSWORD", "password"), "Message store DB pass")
+	flag.StringVar(&conf.msgstorePort, "msgstorePort", getenv("DB_MSGSTORE_PORT", "3306"), "Message store DB port")
+	flag.StringVar(&conf.msgstoreHost, "msgstoreHost", getenv("DB_MSGSTORE_HOST", "localhost"), "Message store DB host")
+	flag.StringVar(&conf.msgstoreName, "msgstoreName", getenv("DB_MSGSTORE_DATABASE", "microservice_sekolah"), "Message store DB name")
 
 	flag.Parse()
 
@@ -62,6 +72,17 @@ func (c *Config) GetDBConnStr() string {
 	return "file:" + c.dbName + "?_foreign_keys=on"
 }
 
+func (c *Config) GetMsgStoreConnStr() string {
+	return fmt.Sprintf(
+		"%s:%s@tcp(%s:%s)/%s?multiStatements=true&charset=utf8mb4&parseTime=True&loc=Local",
+		c.msgstoreUser,
+		c.msgstorePswd,
+		c.msgstoreHost,
+		c.msgstorePort,
+		c.msgstoreName,
+	)
+}
+
 func (c *Config) GetAPIPort() string {
 	return ":" + c.apiPort
 }
@@ -70,11 +91,23 @@ func (c *Config) ConnectToDatabase() *sqlstore.Container {
 
 	logLevel := "ERROR"
 	if c.appEnv != "production" {
-		logLevel = "DEBUG"
+		logLevel = "INFO"
 	}
 
 	dbLog := waLog.Stdout("Database", logLevel, true)
 	db, err := sqlstore.New("sqlite3", c.GetDBConnStr(), dbLog)
+	if err != nil {
+		zap.S().Panicf("Failed to connect to database: %s", err)
+		panic(err)
+	}
+
+	return db
+}
+
+func (c *Config) ConnectToMessageStore() *gorm.DB {
+	zap.S().Debugf("Connecting to message store database @ %s:%s\n", c.msgstoreHost, c.msgstorePort)
+
+	db, err := gorm.Open("mysql", c.GetMsgStoreConnStr())
 	if err != nil {
 		zap.S().Panicf("Failed to connect to database: %s", err)
 		panic(err)

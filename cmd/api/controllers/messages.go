@@ -5,10 +5,12 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"go.mau.fi/whatsmeow"
 	"go.uber.org/zap"
+	"gomeow/cmd/models"
 	"gomeow/pkg/application"
 	"io"
 	"log"
 	"net/http"
+	"time"
 )
 
 type JsonErrorResponse struct {
@@ -23,12 +25,6 @@ type ApiError struct {
 type returnData struct {
 	Success bool                       `json:"success"`
 	Data    application.PendingMessage `json:"data"`
-}
-
-type detailedMessage struct {
-	Message   string `json:"message"`
-	To        string `json:"to"`
-	MessageId string `json:"messageId"`
 }
 
 func MessageIndex(app *application.Application) httprouter.Handle {
@@ -57,6 +53,16 @@ func MessageIndex(app *application.Application) httprouter.Handle {
 			Message:   message,
 		}
 
+		// store to message store
+		storeToMessageStore(
+			app,
+			app.Meow.DeviceStore.ID.String(),
+			to,
+			message,
+			newMessageId,
+		)
+
+		// add to queue
 		app.Queue.Add(pendingMessage)
 
 		formattedValues := returnData{
@@ -83,4 +89,17 @@ func writeErrorResponse(w http.ResponseWriter, errorCode int, errorMsg string) {
 	if err != nil {
 		zap.S().Fatalf(err.Error())
 	}
+}
+
+func storeToMessageStore(app *application.Application, jid string, destination string, body string, messageId string) {
+	storedMessage := models.Message{
+		JID:         jid,
+		Destination: destination,
+		MessageId:   messageId,
+		Body:        body,
+		CreatedAt:   time.Time{},
+		UpdatedAt:   time.Time{},
+	}
+
+	app.MessageStore.Create(&storedMessage)
 }

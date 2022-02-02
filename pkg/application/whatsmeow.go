@@ -43,6 +43,9 @@ func Init(c *config.Config, container *sqlstore.Container) *Meow {
 		panic(err)
 	}
 
+	zap.S().Debug("JID: ", deviceStore.ID)
+	//zap.S().Fatal("Exited")
+
 	//fmt.Printf("%+v\n", store.CompanionProps)
 	//fmt.Printf("%+v\n", deviceStore.Platform)
 	//panic("test")
@@ -50,7 +53,7 @@ func Init(c *config.Config, container *sqlstore.Container) *Meow {
 	// init client log
 	logLevel := "ERROR"
 	if c.GetAppEnv() != "production" {
-		logLevel = "DEBUG"
+		logLevel = "INFO"
 	}
 
 	clientLog := waLog.Stdout("Client", logLevel, true)
@@ -130,7 +133,5 @@ func eventHandler(evt interface{}) {
 	switch v := evt.(type) {
 	case *events.Message:
 		zap.S().Debugf("Received a message: %s", v.Message.GetConversation())
-	case *events.Receipt:
-		zap.S().Debugf("Received a receipt [%s] With Type: [%s]", v.MessageIDs, v.Type)
 	}
 }
