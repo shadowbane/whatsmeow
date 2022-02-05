@@ -20,5 +20,8 @@ func Get(app *application.Application) *httprouter.Router {
 
 	// delete
 
+	// solo.wablas.com Compatible API
+	mux.POST("/api/v2/send-message", controllers.MessageSend(app))
+
 	return mux
 }

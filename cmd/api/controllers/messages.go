@@ -23,7 +23,8 @@ type ApiError struct {
 }
 
 type returnData struct {
-	Success bool                       `json:"success"`
+	Status  bool                       `json:"status"`
+	Message string                     `json:"message"`
 	Data    application.PendingMessage `json:"data"`
 }
 
@@ -66,7 +67,8 @@ func MessageIndex(app *application.Application) httprouter.Handle {
 		app.Queue.Add(pendingMessage)
 
 		formattedValues := returnData{
-			Success: true,
+			Status:  true,
+			Message: "Message queued",
 			Data:    pendingMessage,
 		}
 
