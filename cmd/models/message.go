@@ -9,7 +9,7 @@ type Message struct {
 	Destination string    `json:"destination" gorm:"not null"`
 	Sent        bool      `json:"sent" gorm:"Default:false"`
 	Read        bool      `json:"read" gorm:"Default:false"`
-	Body        string    `json:"body"`
+	Body        string    `json:"body" gorm:"Column:body;type:text;"`
 	CreatedAt   time.Time `json:"created_at" gorm:"type:timestamp"`
 	UpdatedAt   time.Time `json:"updated_at" gorm:"type:timestamp"`
 }
