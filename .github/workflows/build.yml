@@ -37,3 +37,12 @@ jobs:
             ${{ steps.meta.outputs.tags }}
             234354743961.dkr.ecr.ap-southeast-1.amazonaws.com/gomeow:latest
           labels: ${{ steps.meta.outputs.labels }}
+
+  update-containers:
+    runs-on: ubuntu-latest
+    needs: publish_docker_image
+    steps:
+
+      - name: Updating Whatsmeow Student Hook
+        run: |
+          curl -H "Accept: application/json" -X POST ${{ secrets.WHATSMEOW_STUDENT_HOOK }}
