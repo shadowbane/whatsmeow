@@ -34,7 +34,7 @@ func main() {
 	app.Meow.Client.AddEventHandler(app.AddReadEventHandler)
 
 	// Load queue
-	go app.LoadQueue()
+	go app.LoadQueue(app.Meow.DeviceStore.ID.String())
 
 	srv := server.
 		Get().

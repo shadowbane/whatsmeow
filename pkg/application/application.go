@@ -61,11 +61,11 @@ func (app *Application) AddReadEventHandler(evt interface{}) {
 	}
 }
 
-func (app *Application) LoadQueue() {
+func (app *Application) LoadQueue(jid string) {
 	zap.S().Info("Loading queue")
 
 	var messages []models.Message
-	app.MessageStore.Where("sent = 0").Find(&messages)
+	app.MessageStore.Where("sent = ? AND jid = ?", "0", jid).Find(&messages)
 
 	zap.S().Info("Found ", len(messages), " messages to send")
 
