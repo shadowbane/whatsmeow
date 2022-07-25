@@ -33,7 +33,7 @@ type PendingMessage struct {
 
 func Init(c *config.Config, container *sqlstore.Container) *Meow {
 	// init device store
-	store.CompanionProps.PlatformType = waProto.CompanionProps_CHROME.Enum()
+	store.DeviceProps.PlatformType = waProto.DeviceProps_CHROME.Enum()
 	//store.CompanionProps.Os = waProto.UserAgent_WINDOWS.String()
 	//store.CompanionProps.Version = "1.0.0"
 	zap.S().Info("Initializing DeviceStore")
@@ -120,7 +120,7 @@ func (m *Meow) SendMessage(message PendingMessage) error {
 		},
 	}
 
-	_, err := m.Client.SendMessage(newJid, message.MessageId, newMessage)
+	_, err := m.Client.SendMessage(context.Background(), newJid, message.MessageId, newMessage)
 	if err != nil {
 		zap.S().Errorf(err.Error())
 		return err
