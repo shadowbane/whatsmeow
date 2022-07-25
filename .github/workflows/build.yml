@@ -43,6 +43,10 @@ jobs:
     needs: publish_docker_image
     steps:
 
-      - name: Updating Whatsmeow Student Hook
+      - name: Updating Whatsmeow SIKUT Hook
         run: |
-          curl -H "Accept: application/json" -X POST ${{ secrets.WHATSMEOW_STUDENT_HOOK }}
+          curl -H "Accept: application/json" -X POST ${{ secrets.WHATSMEOW_SIKUT_HOOK }}
+
+      - name: Updating Whatsmeow SIAKAD Hook
+        run: |
+          curl -H "Accept: application/json" -X POST ${{ secrets.WHATSMEOW_SIAKAD_HOOK }}
