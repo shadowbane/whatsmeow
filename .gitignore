@@ -3,3 +3,4 @@ log/*.log
 bin/CompileDaemon*
 main
 *.db
+/.idea
