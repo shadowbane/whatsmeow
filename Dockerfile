@@ -1,4 +1,4 @@
-FROM golang:1.17-alpine
+FROM golang:1.19-alpine
 
 MAINTAINER Adli I. Ifkar <adly.shadowbane@gmail.com>
 ENV LANG=en_US.UTF-8
