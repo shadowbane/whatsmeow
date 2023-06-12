@@ -40,6 +40,9 @@ func MessageSend(app *application.Application) httprouter.Handle {
 			return
 		}
 
+		// debug requestData
+		zap.S().Debugf("Request Data: %+v", requestData)
+
 		//messageArr := requestData.Data[0]
 
 		// remove first character if it is a '+' sign
