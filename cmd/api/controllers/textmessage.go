@@ -33,28 +33,28 @@ func MessageSend(app *application.Application) httprouter.Handle {
 			}
 		}(r.Body)
 
-		var requestData textMessageData
+		var requestData arrayOfMessage
 		err := json.NewDecoder(r.Body).Decode(&requestData)
+
+		// debug requestData
+		zap.S().Debugf("Request Data: %+v", requestData)
 		if err != nil {
 			writeErrorResponse(w, http.StatusUnprocessableEntity, "Unprocessable Entity")
 			return
 		}
 
-		// debug requestData
-		zap.S().Debugf("Request Data: %+v", requestData)
-
-		//messageArr := requestData.Data[0]
+		messageArr := requestData.Data[0]
 
 		// remove first character if it is a '+' sign
-		firstCharacter := requestData.Phone[0:1]
+		firstCharacter := messageArr.Phone[0:1]
 		if firstCharacter == "+" {
-			requestData.Phone = requestData.Phone[1:]
+			messageArr.Phone = messageArr.Phone[1:]
 		}
 
 		// dump request data
-		zap.S().Debugf("Request Data: %+v", requestData)
+		zap.S().Debugf("Request Data: %+v", messageArr)
 
-		if len(requestData.Phone) == 0 || len(requestData.Message) == 0 {
+		if len(messageArr.Phone) == 0 || len(messageArr.Message) == 0 {
 			writeErrorResponse(w, 422, "Invalid Parameter Supplied")
 			return
 		}
@@ -62,11 +62,11 @@ func MessageSend(app *application.Application) httprouter.Handle {
 		// generate new messageID
 		newMessageId := whatsmeow.GenerateMessageID()
 
-		zap.S().Debugf("Queueing message with ID: %s and content: %s to %s", newMessageId, requestData.Message, requestData.Phone)
+		zap.S().Debugf("Queueing message with ID: %s and content: %s to %s", newMessageId, messageArr.Message, messageArr.Phone)
 
 		pendingMessage := application.PendingMessage{
-			To:        requestData.Phone,
-			Message:   requestData.Message,
+			To:        messageArr.Phone,
+			Message:   messageArr.Message,
 			MessageId: newMessageId,
 		}
 
@@ -74,8 +74,8 @@ func MessageSend(app *application.Application) httprouter.Handle {
 		storeToMessageStore(
 			app,
 			app.Meow.DeviceStore.ID.String(),
-			requestData.Phone,
-			requestData.Message,
+			messageArr.Phone,
+			messageArr.Message,
 			newMessageId,
 		)
 
