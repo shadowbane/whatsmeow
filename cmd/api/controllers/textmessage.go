@@ -33,22 +33,25 @@ func MessageSend(app *application.Application) httprouter.Handle {
 			}
 		}(r.Body)
 
-		var requestData arrayOfMessage
+		var requestData textMessageData
 		err := json.NewDecoder(r.Body).Decode(&requestData)
 		if err != nil {
 			writeErrorResponse(w, http.StatusUnprocessableEntity, "Unprocessable Entity")
 			return
 		}
 
-		messageArr := requestData.Data[0]
+		//messageArr := requestData.Data[0]
 
 		// remove first character if it is a '+' sign
-		firstCharacter := messageArr.Phone[0:1]
+		firstCharacter := requestData.Phone[0:1]
 		if firstCharacter == "+" {
-			messageArr.Phone = messageArr.Phone[1:]
+			requestData.Phone = requestData.Phone[1:]
 		}
 
-		if len(messageArr.Phone) == 0 || len(messageArr.Message) == 0 {
+		// dump request data
+		zap.S().Debugf("Request Data: %+v", requestData)
+
+		if len(requestData.Phone) == 0 || len(requestData.Message) == 0 {
 			writeErrorResponse(w, 422, "Invalid Parameter Supplied")
 			return
 		}
@@ -56,11 +59,11 @@ func MessageSend(app *application.Application) httprouter.Handle {
 		// generate new messageID
 		newMessageId := whatsmeow.GenerateMessageID()
 
-		zap.S().Debugf("Queueing message with ID: %s and content: %s to %s", newMessageId, messageArr.Message, messageArr.Phone)
+		zap.S().Debugf("Queueing message with ID: %s and content: %s to %s", newMessageId, requestData.Message, requestData.Phone)
 
 		pendingMessage := application.PendingMessage{
-			To:        messageArr.Phone,
-			Message:   messageArr.Message,
+			To:        requestData.Phone,
+			Message:   requestData.Message,
 			MessageId: newMessageId,
 		}
 
@@ -68,8 +71,8 @@ func MessageSend(app *application.Application) httprouter.Handle {
 		storeToMessageStore(
 			app,
 			app.Meow.DeviceStore.ID.String(),
-			messageArr.Phone,
-			messageArr.Message,
+			requestData.Phone,
+			requestData.Message,
 			newMessageId,
 		)
 

@@ -14,9 +14,7 @@ import (
 	"go.uber.org/zap"
 	"gomeow/pkg/config"
 	"google.golang.org/protobuf/proto"
-	"math/rand"
 	"os"
-	"time"
 )
 
 type Meow struct {
@@ -108,9 +106,6 @@ func (m *Meow) Exit() {
 }
 
 func (m *Meow) SendMessage(message PendingMessage) error {
-	// add random delay
-	r := rand.Intn(10)
-	time.Sleep(time.Duration(r) * time.Second)
 	zap.S().Debugf("Sending message with ID: %s and content: %s to: %s", message.MessageId, message.Message, message.To)
 
 	newJid := types.NewJID(message.To, "s.whatsapp.net")
@@ -120,7 +115,7 @@ func (m *Meow) SendMessage(message PendingMessage) error {
 		},
 	}
 
-	_, err := m.Client.SendMessage(context.Background(), newJid, message.MessageId, newMessage)
+	_, err := m.Client.SendMessage(context.Background(), newJid, newMessage)
 	if err != nil {
 		zap.S().Errorf(err.Error())
 		return err

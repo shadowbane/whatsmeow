@@ -109,21 +109,30 @@ func (app *Application) SendMeow() {
 		e := app.Queue.Messages.Front()
 		value := e.Value
 
-		err := app.Meow.SendMessage(value.(PendingMessage))
-
-		// push to back if error happens, then return
-		if err != nil {
-			app.Queue.Messages.MoveToBack(e)
-			return
-		}
-
 		// remove from queue and database
 		app.RemoveFromQueue(e)
+
+		err := app.Meow.SendMessage(value.(PendingMessage))
+
+		// Requeue if error happens.
+		if err != nil {
+			zap.S().Warnf("Error Sending Message: %s. Pushing message back to queue", err.Error())
+			app.Queue.Add(value.(PendingMessage))
+			return
+		} else {
+			// mark as sent
+			app.MarkAsSent(e)
+		}
 	}
 }
 
 func (app *Application) RemoveFromQueue(e *list.Element) {
 	app.Queue.Messages.Remove(e)
+}
+
+func (app *Application) MarkAsSent(e *list.Element) {
+
+	zap.S().Debugf("Marking message as sent")
 
 	// find record in database
 	storedMessage := app.findMessageById(e.Value.(PendingMessage).MessageId)
