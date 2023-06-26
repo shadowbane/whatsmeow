@@ -4,10 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"github.com/shadowbane/go-logger"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	waLog "go.mau.fi/whatsmeow/util/log"
 	"go.uber.org/zap"
-	"gomeow/pkg/logger"
 	"os"
 
 	_ "github.com/jinzhu/gorm/dialects/mysql"
@@ -49,9 +49,13 @@ func Get() *Config {
 	flag.StringVar(&conf.msgstoreHost, "msgstoreHost", getenv("DB_MSGSTORE_HOST", "localhost"), "Message store DB host")
 	flag.StringVar(&conf.msgstoreName, "msgstoreName", getenv("DB_MSGSTORE_DATABASE", "microservice_sekolah"), "Message store DB name")
 
-	flag.Parse()
+	// If the log level is not set, set it to the value of conf.appEnv
+	if getenv("LOG_LEVEL", "") == "" {
+		os.Setenv("LOG_LEVEL", getDefaultLogLevel(conf.appEnv))
+	}
 
-	logger.Init(conf.appEnv)
+	// load logger config
+	logger.Init(logger.LoadEnvForLogger())
 
 	return conf
 }
@@ -114,4 +118,17 @@ func (c *Config) ConnectToMessageStore() *gorm.DB {
 	}
 
 	return db
+}
+
+func getDefaultLogLevel(environment string) string {
+	switch environment {
+	case "local":
+		return "debug"
+	case "debug":
+		return "debug"
+	case "testing":
+		return "debug"
+	default:
+		return "info"
+	}
 }

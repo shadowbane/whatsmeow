@@ -6,11 +6,10 @@ import (
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types/events"
 	"go.uber.org/zap"
+	"gomeow/cmd/models"
 	"gomeow/pkg/config"
 	"gomeow/pkg/queues"
 	"time"
-
-	"gomeow/cmd/models"
 )
 
 type Application struct {
@@ -25,20 +24,20 @@ func Start() (*Application, error) {
 	cfg := config.Get()
 	zap.S().Info("Starting application")
 	db := cfg.ConnectToDatabase()
-	meow := Init(cfg, db)
 	queue := queues.InitQueue()
 	msgStore := cfg.ConnectToMessageStore()
+	waEngine := Init(cfg, db, msgStore)
 
 	// run automigration
-	zap.S().Info("Running auto migration")
+	zap.S().Debug("Running auto migration")
 	msgStore.AutoMigrate(&models.Message{})
 
-	meow.Connect()
+	waEngine.Connect()
 
 	return &Application{
 		Cfg:          cfg,
 		DB:           db,
-		Meow:         meow,
+		Meow:         waEngine,
 		Queue:        queue,
 		MessageStore: msgStore,
 	}, nil
@@ -103,9 +102,9 @@ func (app *Application) RunQueue() {
 
 func (app *Application) SendMeow() {
 	messageLength := app.Queue.Messages.Len()
-	//zap.S().Debugf("Queue length: %d", messageLength)
 
 	if messageLength > 0 {
+		zap.S().Debugf("Queue length: %d", messageLength)
 		e := app.Queue.Messages.Front()
 		value := e.Value
 
@@ -134,17 +133,10 @@ func (app *Application) MarkAsSent(e *list.Element) {
 
 	zap.S().Debugf("Marking message as sent")
 
-	// find record in database
-	storedMessage := app.findMessageById(e.Value.(PendingMessage).MessageId)
-
-	// mark as sent
-	storedMessage.Sent = true
-	app.MessageStore.Save(&storedMessage)
-}
-
-func (app *Application) findMessageById(messageId string) *models.Message {
-	message := models.Message{}
-	app.MessageStore.Where("message_id = ?", messageId).First(&message)
-
-	return &message
+	go func() {
+		app.MessageStore.
+			Model(&models.Message{}).
+			Where("message_id = ?", e.Value.(PendingMessage).MessageId).
+			Update("sent", true)
+	}()
 }

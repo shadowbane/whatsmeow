@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"github.com/jinzhu/gorm"
 	"github.com/mdp/qrterminal/v3"
 	"go.mau.fi/whatsmeow"
 	waProto "go.mau.fi/whatsmeow/binary/proto"
@@ -12,15 +13,18 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 	waLog "go.mau.fi/whatsmeow/util/log"
 	"go.uber.org/zap"
+	"gomeow/cmd/models"
 	"gomeow/pkg/config"
 	"google.golang.org/protobuf/proto"
 	"os"
+	"strings"
 )
 
 type Meow struct {
 	DeviceStore *store.Device
 	ClientLog   waLog.Logger
 	Client      *whatsmeow.Client
+	DB          *gorm.DB
 }
 
 type PendingMessage struct {
@@ -29,7 +33,57 @@ type PendingMessage struct {
 	MessageId string `json:"messageId"`
 }
 
-func Init(c *config.Config, container *sqlstore.Container) *Meow {
+type CustomLogger waLog.Logger
+
+type zapLogger struct {
+	module  string
+	minimum int
+}
+
+func (s *zapLogger) Errorf(msg string, args ...interface{}) {
+	if levelToInt["ERROR"] < s.minimum {
+		return
+	}
+	zap.S().Errorf("[WhatsApp]\t"+msg, args...)
+}
+func (s *zapLogger) Warnf(msg string, args ...interface{}) {
+	if levelToInt["WARN"] < s.minimum {
+		return
+	}
+	zap.S().Warnf("[WhatsApp]\t"+msg, args...)
+}
+func (s *zapLogger) Infof(msg string, args ...interface{}) {
+	if levelToInt["INFO"] < s.minimum {
+		return
+	}
+	zap.S().Infof("[WhatsApp]\t"+msg, args...)
+}
+func (s *zapLogger) Debugf(msg string, args ...interface{}) {
+	if levelToInt["DEBUG"] < s.minimum {
+		return
+	}
+	zap.S().Debugf("[WhatsApp]\t"+msg, args...)
+}
+func (s *zapLogger) Sub(module string) waLog.Logger {
+	return &zapLogger{module: fmt.Sprintf("%s/%s", s.module, module), minimum: s.minimum}
+}
+
+var levelToInt = map[string]int{
+	"":      -1,
+	"DEBUG": 0,
+	"INFO":  1,
+	"WARN":  2,
+	"ERROR": 3,
+}
+
+func InitZapLogger(module string, minLevel string) waLog.Logger {
+	return &zapLogger{
+		module:  module,
+		minimum: levelToInt[strings.ToUpper(minLevel)],
+	}
+}
+
+func Init(c *config.Config, container *sqlstore.Container, db *gorm.DB) *Meow {
 	// init device store
 	store.DeviceProps.PlatformType = waProto.DeviceProps_CHROME.Enum()
 	//store.CompanionProps.Os = waProto.UserAgent_WINDOWS.String()
@@ -54,17 +108,17 @@ func Init(c *config.Config, container *sqlstore.Container) *Meow {
 		logLevel = "INFO"
 	}
 
-	clientLog := waLog.Stdout("Client", logLevel, true)
+	clientLog := InitZapLogger("Client", logLevel)
 
 	// init client
 	zap.S().Info("Initializing WhatsMeow Client")
 	client := whatsmeow.NewClient(deviceStore, clientLog)
-	client.AddEventHandler(eventHandler)
 
 	return &Meow{
 		DeviceStore: deviceStore,
 		ClientLog:   clientLog,
 		Client:      client,
+		DB:          db,
 	}
 }
 
@@ -98,6 +152,8 @@ func (m *Meow) Connect() {
 			zap.S().Panicf("Failed to connect to WhatsApp: %s", err)
 			panic(err)
 		}
+
+		m.Client.AddEventHandler(m.eventHandler)
 	}
 }
 
@@ -124,9 +180,23 @@ func (m *Meow) SendMessage(message PendingMessage) error {
 	return nil
 }
 
-func eventHandler(evt interface{}) {
+func (m *Meow) eventHandler(evt interface{}) {
 	switch v := evt.(type) {
+
 	case *events.Message:
 		zap.S().Debugf("Received a message: %s", v.Message.GetConversation())
+
+	case *events.Receipt:
+		if v.Type == events.ReceiptTypeRead {
+			zap.S().Debugf("Received a read receipt [%s]", v.MessageIDs)
+
+			go func() {
+				for _, messageId := range v.MessageIDs {
+					m.DB.Model(&models.Message{}).
+						Where("message_id = ?", messageId).
+						Update("read", true)
+				}
+			}()
+		}
 	}
 }

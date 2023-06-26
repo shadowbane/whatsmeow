@@ -30,9 +30,6 @@ func main() {
 		zap.S().Fatal(err.Error())
 	}
 
-	// added event handler when message is read
-	app.Meow.Client.AddEventHandler(app.AddReadEventHandler)
-
 	// Load queue
 	go app.LoadQueue(app.Meow.DeviceStore.ID.String())
 
@@ -47,7 +44,7 @@ func main() {
 		zap.S().Info("starting server at ", app.Cfg.GetAPIPort())
 
 		if err := srv.Start(); err != nil {
-			zap.S().Fatal(err.Error())
+			zap.S().Warn(err.Error())
 		}
 	}()
 
