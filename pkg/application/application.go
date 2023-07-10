@@ -13,11 +13,11 @@ import (
 )
 
 type Application struct {
-	Cfg          *config.Config
-	Meow         *Meow
-	DB           *sqlstore.Container
-	MessageStore *gorm.DB
-	Queue        *queues.Queue
+	Cfg    *config.Config
+	Meow   *Meow
+	DB     *sqlstore.Container
+	Models *gorm.DB
+	Queue  *queues.Queue
 }
 
 func Start() (*Application, error) {
@@ -30,16 +30,19 @@ func Start() (*Application, error) {
 
 	// run automigration
 	zap.S().Debug("Running auto migration")
-	msgStore.AutoMigrate(&models.Message{})
+	msgStore.AutoMigrate([]interface{}{
+		&models.Message{},
+		&models.User{},
+	}...)
 
 	waEngine.Connect()
 
 	return &Application{
-		Cfg:          cfg,
-		DB:           db,
-		Meow:         waEngine,
-		Queue:        queue,
-		MessageStore: msgStore,
+		Cfg:    cfg,
+		DB:     db,
+		Meow:   waEngine,
+		Queue:  queue,
+		Models: msgStore,
 	}, nil
 }
 
@@ -51,7 +54,7 @@ func (app *Application) AddReadEventHandler(evt interface{}) {
 
 			go func() {
 				for _, messageId := range v.MessageIDs {
-					app.MessageStore.Model(&models.Message{}).
+					app.Models.Model(&models.Message{}).
 						Where("message_id = ?", messageId).
 						Update("read", true)
 				}
@@ -64,7 +67,7 @@ func (app *Application) LoadQueue(jid string) {
 	zap.S().Info("Loading queue")
 
 	var messages []models.Message
-	app.MessageStore.Where("sent = ? AND jid = ?", "0", jid).Find(&messages)
+	app.Models.Where("sent = ? AND jid = ?", "0", jid).Find(&messages)
 
 	zap.S().Info("Found ", len(messages), " messages to send")
 
@@ -134,7 +137,7 @@ func (app *Application) MarkAsSent(e *list.Element) {
 	zap.S().Debugf("Marking message as sent")
 
 	go func() {
-		app.MessageStore.
+		app.Models.
 			Model(&models.Message{}).
 			Where("message_id = ?", e.Value.(PendingMessage).MessageId).
 			Update("sent", true)

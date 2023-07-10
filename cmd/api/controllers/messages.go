@@ -103,5 +103,5 @@ func storeToMessageStore(app *application.Application, jid string, destination s
 		UpdatedAt:   time.Time{},
 	}
 
-	app.MessageStore.Create(&storedMessage)
+	app.Models.Create(&storedMessage)
 }
