@@ -4,9 +4,14 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"gomeow/cmd/api/controllers"
 	"gomeow/pkg/application"
+	"gomeow/pkg/middleware"
 )
 
 func Get(app *application.Application) *httprouter.Router {
+	m := middleware.InitMiddlewareList()
+
+	m.Set("blank", []middleware.Middleware{}...)
+
 	mux := httprouter.New()
 
 	// index
@@ -21,7 +26,7 @@ func Get(app *application.Application) *httprouter.Router {
 	// delete
 
 	// solo.wablas.com Compatible API
-	mux.POST("/api/v2/send-message", controllers.MessageSend(app))
+	mux.POST("/api/v2/send-message", m.Chain(controllers.MessageSend(app), "auth", "default"))
 
 	return mux
 }

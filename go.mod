@@ -9,9 +9,9 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.17
 	github.com/mdp/qrterminal/v3 v3.1.1
 	github.com/shadowbane/go-logger v0.1.0-alpha
-	go.mau.fi/whatsmeow v0.0.0-20230621213630-12cd3cdb2257
+	go.mau.fi/whatsmeow v0.0.0-20230707224029-6e8b189f1308
 	go.uber.org/zap v1.24.0
-	google.golang.org/protobuf v1.30.0
+	google.golang.org/protobuf v1.31.0
 )
 
 require (
@@ -22,7 +22,7 @@ require (
 	go.mau.fi/libsignal v0.1.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.10.0 // indirect
+	golang.org/x/crypto v0.11.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	rsc.io/qr v0.2.0 // indirect
 )
