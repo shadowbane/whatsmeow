@@ -10,8 +10,6 @@ import (
 func Get(app *application.Application) *httprouter.Router {
 	m := middleware.InitMiddlewareList()
 
-	m.Set("blank", []middleware.Middleware{}...)
-
 	mux := httprouter.New()
 
 	// index

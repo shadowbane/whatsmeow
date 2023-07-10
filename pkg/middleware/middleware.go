@@ -2,9 +2,14 @@ package middleware
 
 import (
 	"github.com/julienschmidt/httprouter"
+	"reflect"
 )
 
-type Middleware func(httprouter.Handle) httprouter.Handle
+//type Middleware func(httprouter.Handle) httprouter.Handle
+
+type Middleware struct {
+	Handler func(httprouter.Handle) httprouter.Handle
+}
 
 type List struct {
 	Middlewares map[string][]Middleware
@@ -16,13 +21,14 @@ type List struct {
 
 // Chain - chains all middleware functions right to left
 // https://husobee.github.io/golang/http/middleware/2015/12/22/simple-middleware.html
-func Chain(f httprouter.Handle, m ...Middleware) httprouter.Handle {
+func Chain(f httprouter.Handle, m []Middleware) httprouter.Handle {
 	// if our chain is done, use the original handlerfunc
 	if len(m) == 0 {
 		return f
 	}
+
 	// otherwise run recursively over nested handlers
-	return m[0](Chain(f, m[1:]...))
+	return m[0].Handler(Chain(f, m[1:]))
 }
 
 func InitMiddlewareList() *List {
@@ -30,15 +36,16 @@ func InitMiddlewareList() *List {
 		Middlewares: make(map[string][]Middleware),
 	}
 
-	return list.Set("default", []Middleware{
-		LogRequest,
-	}...).Set("auth", []Middleware{
-		LogRequest,
-		Auth,
-	}...).Set("blank", []Middleware{}...)
+	list = list.Set("default", []Middleware{
+		{Handler: LogRequest},
+	}).Set("auth", []Middleware{
+		{Handler: Auth},
+	})
+
+	return list
 }
 
-func (m *List) Set(name string, middlewares ...Middleware) *List {
+func (m *List) Set(name string, middlewares []Middleware) *List {
 	m.Middlewares[name] = middlewares
 
 	return m
@@ -51,8 +58,35 @@ func (m *List) Chain(f httprouter.Handle, name ...string) httprouter.Handle {
 		middlewares = append(middlewares, m.Middlewares[n]...)
 	}
 
+	middlewares = Unique(middlewares)
+
 	// run original function
-	return Chain(f, middlewares...)
+	return Chain(f, middlewares)
+}
+
+// Unique removes duplicates from a slice of Middleware
+func Unique(middlewares []Middleware) []Middleware {
+	unique := make([]Middleware, 0, len(middlewares))
+
+	found := false
+
+	for _, v := range middlewares {
+		found = false
+
+		for _, u := range unique {
+			// compare u.Handler and v.Handler
+			if reflect.ValueOf(u.Handler).Pointer() == reflect.ValueOf(v.Handler).Pointer() {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			unique = append(unique, v)
+		}
+	}
+
+	return unique
 }
 
 func (m *List) Get(name string) []Middleware {
