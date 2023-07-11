@@ -14,12 +14,12 @@ type Server struct {
 	srv *http.Server
 }
 
-type fwdToZapWriter struct {
-	logger *zap.SugaredLogger
+type FwdToZapWriter struct {
+	Logger *zap.SugaredLogger
 }
 
-func (fw *fwdToZapWriter) Write(p []byte) (n int, err error) {
-	fw.logger.Errorw(string(p))
+func (fw *FwdToZapWriter) Write(p []byte) (n int, err error) {
+	fw.Logger.Errorw(string(p))
 	return len(p), nil
 }
 
@@ -35,7 +35,7 @@ func (s *Server) WithAddr(addr string) *Server {
 }
 
 func (s *Server) WithErrLogger(l *zap.SugaredLogger) *Server {
-	s.srv.ErrorLog = log.New(&fwdToZapWriter{l}, "", 0)
+	s.srv.ErrorLog = log.New(&FwdToZapWriter{Logger: l}, "", 0)
 	return s
 }
 

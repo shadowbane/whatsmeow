@@ -35,6 +35,7 @@ func InitMiddlewareList() *List {
 	list = list.Set("default", []Middleware{
 		{Handler: LogRequest},
 	}).Set("auth", []Middleware{
+		{Handler: LogRequest},
 		{Handler: Auth},
 	})
 

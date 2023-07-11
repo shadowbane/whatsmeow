@@ -2,13 +2,13 @@ package application
 
 import (
 	"container/list"
-	"github.com/jinzhu/gorm"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.uber.org/zap"
 	"gomeow/cmd/models"
 	"gomeow/pkg/config"
 	"gomeow/pkg/queues"
 	"gomeow/pkg/whatsmeow"
+	"gorm.io/gorm"
 	"time"
 )
 

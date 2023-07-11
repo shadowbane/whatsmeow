@@ -3,7 +3,6 @@ package whatsmeow
 import (
 	"context"
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"github.com/mdp/qrterminal/v3"
 	"go.mau.fi/whatsmeow"
 	waProto "go.mau.fi/whatsmeow/binary/proto"
@@ -16,6 +15,7 @@ import (
 	"gomeow/cmd/models"
 	"gomeow/pkg/config"
 	"google.golang.org/protobuf/proto"
+	"gorm.io/gorm"
 	"os"
 	"strings"
 )

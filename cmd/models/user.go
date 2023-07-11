@@ -1,11 +1,13 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type User struct {
 	ID          int64     `json:"id" gorm:"auto_increment;primary_key"`
-	Name        string    `json:"name" gorm:"Column:name;type:varchar(255);not null"`
-	Token       string    `json:"token" gorm:"Column:token;type:text;not null"`
+	Name        string    `json:"name" gorm:"Column:name;type:varchar(255);not null" valid:"required"`
+	Token       string    `json:"token" gorm:"Column:token;type:text;not null" valid:"required,stringlength(15|20)"`
 	Webhook     string    `json:"webhook" gorm:"Column:webhook;type:text"`
 	JID         string    `json:"jid" gorm:"Column:jid;type:varchar(255)"`
 	QRCode      string    `json:"qrcode" gorm:"Column:qrcode;type:text"`
@@ -16,6 +18,6 @@ type User struct {
 	UpdatedAt   time.Time `json:"updated_at" gorm:"type:timestamp"`
 }
 
-func (m *User) TableName() string {
+func (u *User) TableName() string {
 	return "users"
 }
