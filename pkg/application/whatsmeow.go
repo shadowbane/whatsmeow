@@ -96,11 +96,6 @@ func Init(c *config.Config, container *sqlstore.Container, db *gorm.DB) *Meow {
 	}
 
 	zap.S().Debug("JID: ", deviceStore.ID)
-	//zap.S().Fatal("Exited")
-
-	//fmt.Printf("%+v\n", store.CompanionProps)
-	//fmt.Printf("%+v\n", deviceStore.Platform)
-	//panic("test")
 
 	// init client log
 	logLevel := "ERROR"
