@@ -6,6 +6,7 @@ import (
 	"go.mau.fi/whatsmeow"
 	"go.uber.org/zap"
 	"gomeow/pkg/application"
+	whatsmeow2 "gomeow/pkg/whatsmeow"
 	"io"
 	"log"
 	"net/http"
@@ -64,7 +65,7 @@ func MessageSend(app *application.Application) httprouter.Handle {
 
 		zap.S().Debugf("Queueing message with ID: %s and content: %s to %s", newMessageId, messageArr.Message, messageArr.Phone)
 
-		pendingMessage := application.PendingMessage{
+		pendingMessage := whatsmeow2.PendingMessage{
 			To:        messageArr.Phone,
 			Message:   messageArr.Message,
 			MessageId: newMessageId,

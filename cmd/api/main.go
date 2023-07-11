@@ -30,8 +30,10 @@ func main() {
 		zap.S().Fatal(err.Error())
 	}
 
+	// ToDo: Move somewhere else, after the device is connected.
+	// The queue should be pushed according to user's ID
 	// Load queue
-	go app.LoadQueue(app.Meow.DeviceStore.ID.String())
+	//go app.LoadQueue(app.Meow.DeviceStore.ID.String())
 
 	srv := server.
 		Get().
@@ -48,18 +50,22 @@ func main() {
 		}
 	}()
 
+	// ToDo: Move after device is connected
+	// each device should have their own queue
 	// queue runner
 	// will run every second
-	go func() {
-		zap.S().Info("starting queue runner")
-		app.RunQueue()
-	}()
+	//go func() {
+	//	zap.S().Info("starting queue runner")
+	//	app.RunQueue()
+	//}()
 
 	exithandler.Init(func() {
 		if err := srv.Close(); err != nil {
 			zap.S().Error(err.Error())
 		}
-		zap.S().Info("Exiting Application")
-		app.Meow.Exit()
+		zap.S().Info("Closing Application")
+
+		// ToDo: Exit all device connected
+		//app.Meow.Exit()
 	})
 }

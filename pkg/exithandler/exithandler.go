@@ -1,7 +1,7 @@
 package exithandler
 
 import (
-	"log"
+	"go.uber.org/zap"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,11 +14,11 @@ func Init(cb func()) {
 
 	go func() {
 		sig := <-sigs
-		log.Println("exit reason: ", sig)
+		zap.S().Info("exit reason: ", sig)
 		terminate <- true
 	}()
 
 	<-terminate
 	cb()
-	log.Print("exiting program")
+	zap.S().Info("Application Closed")
 }

@@ -91,7 +91,7 @@ func (c *Config) GetAPIPort() string {
 	return ":" + c.apiPort
 }
 
-func (c *Config) ConnectToDatabase() *sqlstore.Container {
+func (c *Config) ConnectToWhatsmeowDB() *sqlstore.Container {
 
 	logLevel := "ERROR"
 	if c.appEnv != "production" {
@@ -108,8 +108,8 @@ func (c *Config) ConnectToDatabase() *sqlstore.Container {
 	return db
 }
 
-func (c *Config) ConnectToMessageStore() *gorm.DB {
-	zap.S().Debugf("Connecting to message store database @ %s:%s\n", c.msgstoreHost, c.msgstorePort)
+func (c *Config) ConnectToDB() *gorm.DB {
+	zap.S().Debugf("Connecting to database @%s:%s", c.msgstoreHost, c.msgstorePort)
 
 	db, err := gorm.Open("mysql", c.GetMsgStoreConnStr())
 	if err != nil {

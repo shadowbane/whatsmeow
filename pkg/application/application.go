@@ -4,17 +4,17 @@ import (
 	"container/list"
 	"github.com/jinzhu/gorm"
 	"go.mau.fi/whatsmeow/store/sqlstore"
-	"go.mau.fi/whatsmeow/types/events"
 	"go.uber.org/zap"
 	"gomeow/cmd/models"
 	"gomeow/pkg/config"
 	"gomeow/pkg/queues"
+	"gomeow/pkg/whatsmeow"
 	"time"
 )
 
 type Application struct {
 	Cfg    *config.Config
-	Meow   *Meow
+	Meow   *whatsmeow.Meow
 	DB     *sqlstore.Container
 	Models *gorm.DB
 	Queue  *queues.Queue
@@ -23,44 +23,30 @@ type Application struct {
 func Start() (*Application, error) {
 	cfg := config.Get()
 	zap.S().Info("Starting application")
-	db := cfg.ConnectToDatabase()
+	meowdb := cfg.ConnectToWhatsmeowDB()
 	queue := queues.InitQueue()
-	msgStore := cfg.ConnectToMessageStore()
-	waEngine := Init(cfg, db, msgStore)
+	database := cfg.ConnectToDB()
 
 	// run automigration
 	zap.S().Debug("Running auto migration")
-	msgStore.AutoMigrate([]interface{}{
+	database.AutoMigrate([]interface{}{
 		&models.Message{},
 		&models.User{},
 	}...)
 
-	waEngine.Connect()
+	// ToDo: Add a way to load all the users from the database
+	// Then, connect each device in their own goroutine
+	// Every goroutine should have their own Meow instance, and their own queue
+	//waEngine := whatsmeow.Init(cfg, meowdb, database)
+	//waEngine.Connect()
 
 	return &Application{
-		Cfg:    cfg,
-		DB:     db,
-		Meow:   waEngine,
+		Cfg: cfg,
+		DB:  meowdb,
+		//Meow:   waEngine,
 		Queue:  queue,
-		Models: msgStore,
+		Models: database,
 	}, nil
-}
-
-func (app *Application) AddReadEventHandler(evt interface{}) {
-	switch v := evt.(type) {
-	case *events.Receipt:
-		if v.Type == events.ReceiptTypeRead {
-			zap.S().Debugf("Received a read receipt [%s]", v.MessageIDs)
-
-			go func() {
-				for _, messageId := range v.MessageIDs {
-					app.Models.Model(&models.Message{}).
-						Where("message_id = ?", messageId).
-						Update("read", true)
-				}
-			}()
-		}
-	}
 }
 
 func (app *Application) LoadQueue(jid string) {
@@ -73,7 +59,7 @@ func (app *Application) LoadQueue(jid string) {
 
 	for _, message := range messages {
 
-		pendingMessage := PendingMessage{
+		pendingMessage := whatsmeow.PendingMessage{
 			To:        message.Destination,
 			MessageId: message.MessageId,
 			Message:   message.Body,
@@ -114,12 +100,12 @@ func (app *Application) SendMeow() {
 		// remove from queue and database
 		app.RemoveFromQueue(e)
 
-		err := app.Meow.SendMessage(value.(PendingMessage))
+		err := app.Meow.SendMessage(value.(whatsmeow.PendingMessage))
 
 		// Requeue if error happens.
 		if err != nil {
 			zap.S().Warnf("Error Sending Message: %s. Pushing message back to queue", err.Error())
-			app.Queue.Add(value.(PendingMessage))
+			app.Queue.Add(value.(whatsmeow.PendingMessage))
 			return
 		} else {
 			// mark as sent
@@ -139,7 +125,7 @@ func (app *Application) MarkAsSent(e *list.Element) {
 	go func() {
 		app.Models.
 			Model(&models.Message{}).
-			Where("message_id = ?", e.Value.(PendingMessage).MessageId).
+			Where("message_id = ?", e.Value.(whatsmeow.PendingMessage).MessageId).
 			Update("sent", true)
 	}()
 }

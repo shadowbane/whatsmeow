@@ -1,4 +1,4 @@
-package application
+package whatsmeow
 
 import (
 	"context"

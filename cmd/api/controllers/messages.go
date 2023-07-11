@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 	"gomeow/cmd/models"
 	"gomeow/pkg/application"
+	whatsmeow2 "gomeow/pkg/whatsmeow"
 	"io"
 	"log"
 	"net/http"
@@ -23,9 +24,9 @@ type ApiError struct {
 }
 
 type returnData struct {
-	Status  bool                       `json:"status"`
-	Message string                     `json:"message"`
-	Data    application.PendingMessage `json:"data"`
+	Status  bool                      `json:"status"`
+	Message string                    `json:"message"`
+	Data    whatsmeow2.PendingMessage `json:"data"`
 }
 
 func MessageIndex(app *application.Application) httprouter.Handle {
@@ -48,7 +49,7 @@ func MessageIndex(app *application.Application) httprouter.Handle {
 
 		zap.S().Debugf("Queueing message with ID: %s and content: %s to %s", newMessageId, message, to)
 
-		pendingMessage := application.PendingMessage{
+		pendingMessage := whatsmeow2.PendingMessage{
 			To:        to,
 			MessageId: newMessageId,
 			Message:   message,

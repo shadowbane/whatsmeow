@@ -1,11 +1,13 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"github.com/julienschmidt/httprouter"
 	"go.uber.org/zap"
 	"log"
 	"net/http"
+	"time"
 )
 
 type Server struct {
@@ -55,5 +57,11 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Close() error {
-	return s.srv.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer func() {
+		// extra handling here
+		cancel()
+	}()
+
+	return s.srv.Shutdown(ctx)
 }
