@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/utils"
+	"strings"
 	"time"
 )
 
@@ -102,6 +103,9 @@ func (l ZapLogger) ParamsFilter(ctx context.Context, sql string, params ...inter
 }
 
 func LogLevelToGormLevel(level string) logger.LogLevel {
+	// convert level to uppercase first
+	level = strings.ToUpper(level)
+
 	if l, ok := levelToGormLevel[level]; ok {
 		return l
 	}

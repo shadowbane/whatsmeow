@@ -23,7 +23,7 @@ type Application struct {
 func Start() (*Application, error) {
 	cfg := config.Get()
 	zap.S().Info("Starting application")
-	meowdb := cfg.ConnectToWhatsmeowDB()
+	//meowdb := cfg.ConnectToWhatsmeowDB()
 	queue := queues.InitQueue()
 	database := cfg.ConnectToDB()
 
@@ -42,7 +42,7 @@ func Start() (*Application, error) {
 
 	return &Application{
 		Cfg: cfg,
-		DB:  meowdb,
+		//DB:  meowdb,
 		//Meow:   waEngine,
 		Queue:  queue,
 		Models: database,
