@@ -2,9 +2,10 @@ package user
 
 import (
 	"github.com/julienschmidt/httprouter"
-	apiformattertrait "gomeow/cmd/api/controllers/traits"
 	"gomeow/pkg/application"
 	"net/http"
+
+	apiformattertrait "gomeow/cmd/api/controllers/traits"
 )
 
 func Delete(app *application.Application) httprouter.Handle {

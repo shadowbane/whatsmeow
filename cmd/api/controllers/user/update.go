@@ -2,21 +2,18 @@ package user
 
 import (
 	"encoding/json"
-	"github.com/asaskevich/govalidator"
 	"github.com/julienschmidt/httprouter"
 	"go.uber.org/zap"
-	apiformattertrait "gomeow/cmd/api/controllers/traits"
-	"gomeow/cmd/models"
 	"gomeow/pkg/application"
 	"net/http"
+
+	apiformattertrait "gomeow/cmd/api/controllers/traits"
 )
 
 func Update(app *application.Application) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w.Header().Set("Content-Type", "application/json")
-		//
+		var request UpdateValidator
 
-		var request models.User
 		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
 			apiformattertrait.WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
@@ -24,25 +21,24 @@ func Update(app *application.Application) httprouter.Handle {
 			return
 		}
 
+		// validating request - ensure fields are present
+		validationError := app.Validator.Validate(request)
+		if validationError != nil {
+			zap.S().Debugf("Error validating request: %+v", validationError)
+			apiformattertrait.WriteMultipleErrorResponse(w, http.StatusUnprocessableEntity, validationError)
+
+			return
+		}
+
 		user, err := findById(app, p.ByName("id"))
 		if err != nil {
-			apiformattertrait.WriteErrorResponse(w, http.StatusNotFound, "Not Found")
+			apiformattertrait.WriteErrorResponse(w, http.StatusNotFound, "User Not Found")
 
 			return
 		}
 
 		// only allow update of token
 		user.Token = request.Token
-
-		zap.S().Debugf("Updating user: %+v", user)
-
-		// validating request
-		success, err := govalidator.ValidateStruct(user)
-		if !success {
-			apiformattertrait.WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
-
-			return
-		}
 
 		result := app.Models.Save(&user)
 		if result.Error != nil {

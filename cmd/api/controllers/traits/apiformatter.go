@@ -3,6 +3,7 @@ package traits
 import (
 	"encoding/json"
 	"go.uber.org/zap"
+	"gomeow/pkg/validator"
 	"net/http"
 )
 
@@ -59,6 +60,30 @@ func WriteErrorResponse(w http.ResponseWriter, errorCode int, errorMsg string) {
 	responseData.SetData(map[string]string{
 		"message": errorMsg,
 	})
+
+	err := json.
+		NewEncoder(w).Encode(responseData)
+
+	if err != nil {
+		zap.S().Fatalf(err.Error())
+	}
+}
+
+func WriteMultipleErrorResponse(w http.ResponseWriter, errorCode int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(errorCode)
+
+	responseData := &ResponseData{
+		Success: false,
+	}
+
+	// get first message of validator.ErrorField
+	responseMessage := map[string]interface{}{
+		"errors":  data,
+		"message": data.([]validator.ErrorField)[0].Message,
+	}
+
+	responseData.SetData(responseMessage)
 
 	err := json.
 		NewEncoder(w).Encode(responseData)

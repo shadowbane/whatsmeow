@@ -3,7 +3,6 @@ package config
 import (
 	"flag"
 	"fmt"
-	"github.com/asaskevich/govalidator"
 	"github.com/shadowbane/go-logger"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.uber.org/zap"
@@ -155,13 +154,20 @@ func (c *Config) ConnectToDB() *gorm.DB {
 			},
 		},
 	})
-
 	if err != nil {
 		zap.S().Panicf("Failed to connect to database: %s", err)
 		panic(err)
 	}
 
-	govalidator.SetFieldsRequiredByDefault(false)
+	dbInstance, err := db.DB()
+	if err != nil {
+		zap.S().Panicf("Failed to connect to database: %s", err)
+		panic(err)
+	}
+
+	dbInstance.SetMaxIdleConns(10)
+	dbInstance.SetMaxOpenConns(100)
+	dbInstance.SetConnMaxLifetime(time.Hour)
 
 	return db
 }

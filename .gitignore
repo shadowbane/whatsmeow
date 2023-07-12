@@ -4,3 +4,4 @@ bin/CompileDaemon*
 main
 *.db
 /.idea
+/Temp

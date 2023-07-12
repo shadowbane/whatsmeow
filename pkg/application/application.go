@@ -7,17 +7,19 @@ import (
 	"gomeow/cmd/models"
 	"gomeow/pkg/config"
 	"gomeow/pkg/queues"
+	"gomeow/pkg/validator"
 	"gomeow/pkg/whatsmeow"
 	"gorm.io/gorm"
 	"time"
 )
 
 type Application struct {
-	Cfg    *config.Config
-	Meow   *whatsmeow.Meow
-	DB     *sqlstore.Container
-	Models *gorm.DB
-	Queue  *queues.Queue
+	Cfg       *config.Config
+	Meow      *whatsmeow.Meow
+	DB        *sqlstore.Container
+	Models    *gorm.DB
+	Queue     *queues.Queue
+	Validator *validator.Validator
 }
 
 func Start() (*Application, error) {
@@ -41,11 +43,12 @@ func Start() (*Application, error) {
 	//waEngine.Connect()
 
 	return &Application{
-		Cfg: cfg,
 		//DB:  meowdb,
 		//Meow:   waEngine,
-		Queue:  queue,
-		Models: database,
+		Cfg:       cfg,
+		Queue:     queue,
+		Models:    database,
+		Validator: validator.InitValidator(),
 	}, nil
 }
 

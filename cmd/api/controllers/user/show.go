@@ -2,10 +2,11 @@ package user
 
 import (
 	"github.com/julienschmidt/httprouter"
-	apiformattertrait "gomeow/cmd/api/controllers/traits"
 	"gomeow/cmd/models"
 	"gomeow/pkg/application"
 	"net/http"
+
+	apiformattertrait "gomeow/cmd/api/controllers/traits"
 )
 
 func Show(app *application.Application) httprouter.Handle {
