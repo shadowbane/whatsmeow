@@ -6,6 +6,9 @@ import (
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	enTranslations "github.com/go-playground/validator/v10/translations/en"
+	"go.uber.org/zap"
+	"gorm.io/gorm"
+	"strings"
 )
 
 type ErrorField struct {
@@ -14,22 +17,35 @@ type ErrorField struct {
 }
 
 type Validator struct {
-	V     *validator.Validate
-	Trans *ut.Translator
+	V      *validator.Validate
+	Trans  *ut.Translator
+	Models *gorm.DB
 }
 
-func InitValidator() *Validator {
+func InitValidator(models *gorm.DB) *Validator {
 	eng := en.New()
 	uni := ut.New(eng, eng)
 	trans, _ := uni.GetTranslator("en")
 
 	val := &Validator{
-		V:     validator.New(),
-		Trans: &trans,
+		V:      validator.New(),
+		Trans:  &trans,
+		Models: models,
 	}
 	_ = enTranslations.RegisterDefaultTranslations(val.V, trans)
 
+	// register custom validators
+	registerCustomValidators(val)
+
 	return val
+}
+
+// registerCustomValidators registers custom validators
+func registerCustomValidators(v *Validator) {
+	err := v.V.RegisterValidation("unique", v.uniqueValidator)
+	if err != nil {
+		zap.S().Fatalf("error registering unique validator: %v", err)
+	}
 }
 
 func (validation *Validator) Validate(object interface{}) (errs []ErrorField) {
@@ -69,4 +85,33 @@ func (validation *Validator) translateError(err error) (errs []ErrorField) {
 		})
 	}
 	return errs
+}
+
+func (validation *Validator) uniqueValidator(fl validator.FieldLevel) bool {
+	/** Translation */
+	_ = validation.V.RegisterTranslation("unique", *validation.Trans, func(ut ut.Translator) error {
+		return ut.Add("unique", "{0} '{1}' already taken", true)
+	}, func(ut ut.Translator, fe validator.FieldError) string {
+		t, _ := ut.T("unique", fe.Field(), fe.Value().(string))
+		return t
+	})
+	/** End Translation */
+
+	value := fl.Field().String()
+	parameters := strings.Split(fl.Param(), "/")
+
+	zap.S().Debugf("value: %s, parameters: %s", value, parameters)
+
+	table, column := parameters[0], parameters[1]
+
+	var count int64
+	validation.Models.Table(table).
+		Where(column+" = ?", value).
+		Count(&count)
+
+	if count > 0 {
+		return false
+	}
+
+	return true
 }

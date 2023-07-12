@@ -7,7 +7,6 @@ import (
 	apiformattertrait "gomeow/cmd/api/controllers/traits"
 	"gomeow/cmd/models"
 	"gomeow/pkg/application"
-	"gomeow/pkg/validator"
 	"net/http"
 )
 
@@ -27,24 +26,6 @@ func Store(app *application.Application) httprouter.Handle {
 		if validationError != nil {
 			zap.S().Debugf("Error validating request: %+v", validationError)
 			apiformattertrait.WriteMultipleErrorResponse(w, http.StatusUnprocessableEntity, validationError)
-
-			return
-		}
-
-		// validating request - check if name already exists
-		var count int64
-		app.Models.Table("users").
-			Where("name = ?", request.Name).
-			Count(&count)
-
-		if count > 0 {
-			var errors []validator.ErrorField
-			errors = append(errors, validator.ErrorField{
-				Field:   "name",
-				Message: "Username already exists",
-			})
-
-			apiformattertrait.WriteMultipleErrorResponse(w, http.StatusUnprocessableEntity, errors)
 
 			return
 		}

@@ -31,10 +31,14 @@ func Start() (*Application, error) {
 
 	// run automigration
 	zap.S().Debug("Running auto migration")
-	database.AutoMigrate([]interface{}{
+	err := database.AutoMigrate([]interface{}{
 		&models.Message{},
 		&models.User{},
 	}...)
+	if err != nil {
+		zap.S().Fatalf("Error running auto migration: %v", err)
+		panic(err)
+	}
 
 	// ToDo: Add a way to load all the users from the database
 	// Then, connect each device in their own goroutine
@@ -42,14 +46,21 @@ func Start() (*Application, error) {
 	//waEngine := whatsmeow.Init(cfg, meowdb, database)
 	//waEngine.Connect()
 
-	return &Application{
+	app := &Application{
 		//DB:  meowdb,
 		//Meow:   waEngine,
-		Cfg:       cfg,
-		Queue:     queue,
-		Models:    database,
-		Validator: validator.InitValidator(),
-	}, nil
+		Cfg:    cfg,
+		Queue:  queue,
+		Models: database,
+	}
+
+	app.InitValidator()
+
+	return app, nil
+}
+
+func (app *Application) InitValidator() {
+	app.Validator = validator.InitValidator(app.Models)
 }
 
 func (app *Application) LoadQueue(jid string) {
