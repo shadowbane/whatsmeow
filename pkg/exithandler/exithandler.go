@@ -10,7 +10,7 @@ import (
 func Init(cb func()) {
 	sigs := make(chan os.Signal, 1)
 	terminate := make(chan bool, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
 		sig := <-sigs
@@ -19,6 +19,6 @@ func Init(cb func()) {
 	}()
 
 	<-terminate
+
 	cb()
-	zap.S().Info("Application Closed")
 }
