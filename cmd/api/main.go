@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
@@ -10,7 +11,9 @@ import (
 	"gomeow/pkg/application"
 	"gomeow/pkg/exithandler"
 	"gomeow/pkg/server"
+	"gomeow/pkg/wmeow"
 	"runtime"
+	"time"
 )
 
 func main() {
@@ -50,6 +53,8 @@ func main() {
 		}
 	}()
 
+	wmeow.ConnectOnStartup(app)
+
 	// ToDo: Move after device is connected
 	// each device should have their own queue
 	// queue runner
@@ -60,12 +65,23 @@ func main() {
 	//}()
 
 	exithandler.Init(func() {
+		zap.S().Info("Closing Application")
+		zap.S().Info("Waiting for all the processes to finish")
+
+		// here, we need to wait for everything to be closed gracefully
+		// we will use context timeout, and wait for all the goroutines to finish
+		// if it's not closed after 5 seconds, we will force close it
+		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		wmeow.Shutdown()
+
 		if err := srv.Close(); err != nil {
 			zap.S().Error(err.Error())
 		}
-		zap.S().Info("Closing Application")
 
-		// ToDo: Exit all device connected
-		//app.Meow.Exit()
+		select {
+		case <-ctx.Done():
+			zap.S().Debugf("Gracefully closed")
+		}
+		zap.S().Info("Application Closed")
 	})
 }
