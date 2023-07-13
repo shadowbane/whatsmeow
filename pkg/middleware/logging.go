@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func LogRequest(next httprouter.Handle) httprouter.Handle {
+func (mw *MwStruct) LogRequest(next httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		zap.S().Infof("[LOG MIDDLEWARE]\t%s - %s %s %s", r.RemoteAddr, r.Proto, r.Method, r.URL.RequestURI())
 		next(w, r, p)

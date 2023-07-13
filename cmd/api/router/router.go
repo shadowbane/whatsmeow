@@ -10,7 +10,7 @@ import (
 )
 
 func Get(app *application.Application) *httprouter.Router {
-	m := middleware.InitMiddlewareList()
+	m := middleware.InitMiddlewareList(app.Models)
 
 	mux := httprouter.New()
 

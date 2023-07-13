@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"github.com/julienschmidt/httprouter"
+	"gorm.io/gorm"
 	"reflect"
 )
 
@@ -13,6 +14,10 @@ type Middleware struct {
 
 type List struct {
 	Middlewares map[string][]Middleware
+}
+
+type MwStruct struct {
+	Models *gorm.DB
 }
 
 // Chain - chains all middleware functions right to left
@@ -27,16 +32,20 @@ func Chain(f httprouter.Handle, m []Middleware) httprouter.Handle {
 	return m[0].Handler(Chain(f, m[1:]))
 }
 
-func InitMiddlewareList() *List {
+func InitMiddlewareList(db *gorm.DB) *List {
 	list := &List{
 		Middlewares: make(map[string][]Middleware),
 	}
 
+	mw := &MwStruct{
+		Models: db,
+	}
+
 	list = list.Set("default", []Middleware{
-		{Handler: LogRequest},
+		{Handler: mw.LogRequest},
 	}).Set("auth", []Middleware{
-		{Handler: LogRequest},
-		{Handler: Auth},
+		{Handler: mw.Auth},
+		{Handler: mw.LogRequest},
 	})
 
 	return list
