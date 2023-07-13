@@ -21,18 +21,19 @@ func Update(app *application.Application) httprouter.Handle {
 			return
 		}
 
+		// ensure user is present
+		user, err := findById(app, p.ByName("id"))
+		if err != nil {
+			apiformattertrait.WriteErrorResponse(w, http.StatusNotFound, "User Not Found")
+
+			return
+		}
+
 		// validating request - ensure fields are present
 		validationError := app.Validator.Validate(request)
 		if validationError != nil {
 			zap.S().Debugf("Error validating request: %+v", validationError)
 			apiformattertrait.WriteMultipleErrorResponse(w, http.StatusUnprocessableEntity, validationError)
-
-			return
-		}
-
-		user, err := findById(app, p.ByName("id"))
-		if err != nil {
-			apiformattertrait.WriteErrorResponse(w, http.StatusNotFound, "User Not Found")
 
 			return
 		}
