@@ -2,6 +2,7 @@ package wmeow
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store"
@@ -32,8 +33,8 @@ type connectionContext struct {
 
 func (mycli *MeowClient) Logout() {
 	mycli.User.IsConnected = false
-	mycli.User.JID = ""
-	mycli.User.Webhook = ""
+	mycli.User.JID = sql.NullString{String: ""}
+	mycli.User.Webhook = sql.NullString{String: ""}
 	result := mycli.DB.Save(&mycli.User)
 	if result.Error != nil {
 		zap.S().Errorf("WMEOW\tError updating user: %+v", result)
@@ -42,6 +43,8 @@ func (mycli *MeowClient) Logout() {
 	zap.S().Infof("WMEOW\tLogged out of WAClient.")
 }
 
+// myEventHandler is the event handler for the WAClient.
+// This will handle all the events from the WAClient.
 func (mycli *MeowClient) myEventHandler(rawEvt interface{}) {
 	switch evt := rawEvt.(type) {
 	case *events.AppStateSyncComplete:
@@ -65,7 +68,10 @@ func (mycli *MeowClient) myEventHandler(rawEvt interface{}) {
 		}
 	case *events.PairSuccess:
 		zap.S().Infof("WMEOW\tPairing success for %d. JID: %s", mycli.User.ID, evt.ID.String())
-		mycli.User.JID = evt.ID.String()
+		mycli.User.JID = sql.NullString{
+			String: evt.ID.String(),
+			Valid:  true,
+		}
 		mycli.User.IsConnected = true
 
 		result := mycli.DB.Save(&mycli.User)
@@ -98,6 +104,8 @@ func (mycli *MeowClient) myEventHandler(rawEvt interface{}) {
 	}
 }
 
+// ConnectAndLogin connects to the WAClient and logs in if necessary.
+// This will also shows the QR code if the user is not logged in
 func (mycli *MeowClient) ConnectAndLogin(err error) (error, bool) {
 	if mycli.WAClient.Store.ID != nil {
 		zap.S().Debugf("WMEOW\tDevice %s already logged in", mycli.WAClient.Store.ID)
@@ -130,7 +138,10 @@ func (mycli *MeowClient) ConnectAndLogin(err error) (error, bool) {
 			for evt := range qrChan {
 				if evt.Event == "code" {
 
-					mycli.User.QRCode = evt.Code
+					mycli.User.QRCode = sql.NullString{
+						String: evt.Code,
+						Valid:  true,
+					}
 
 					result := mycli.DB.Save(&mycli.User)
 					if result.Error != nil {
@@ -140,7 +151,9 @@ func (mycli *MeowClient) ConnectAndLogin(err error) (error, bool) {
 					}
 				} else if evt.Event == "timeout" {
 					// Clear QR code from DB on timeout
-					mycli.User.QRCode = ""
+					mycli.User.QRCode = sql.NullString{
+						String: "",
+					}
 
 					result := mycli.DB.Save(&mycli.User)
 					if result.Error != nil {
@@ -156,7 +169,7 @@ func (mycli *MeowClient) ConnectAndLogin(err error) (error, bool) {
 				} else if evt.Event == "success" {
 					zap.S().Debugf("WMEOW\tQR pairing ok!")
 					// Clear QR code after pairing
-					mycli.User.QRCode = ""
+					mycli.User.QRCode = sql.NullString{String: ""}
 
 					result := mycli.DB.Save(&mycli.User)
 					if result.Error != nil {

@@ -32,7 +32,7 @@ func Logout(app *application.Application) httprouter.Handle {
 			}
 
 			wmeow.ClientPointer[user.ID].Logout()
-			zap.S().Infof("User %s with JID %s Logged Out", user.Name, user.JID)
+			zap.S().Infof("User %s with JID %s Logged Out", user.Name, user.JID.String)
 		} else {
 			if client.IsConnected() {
 				zap.S().Infof("User %s is not logged in. Doing logout anyway", user.Name)

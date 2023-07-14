@@ -37,7 +37,7 @@ func Connect(app *application.Application) httprouter.Handle {
 		}
 
 		go func() {
-			err := wmeow.StartClient(&user, app, user.JID, subscribedEvents)
+			err := wmeow.StartClient(&user, app, user.JID.String, subscribedEvents)
 			if err != nil {
 				zap.S().Errorf("Error starting client: %+v", err)
 			}

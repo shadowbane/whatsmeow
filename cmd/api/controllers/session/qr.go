@@ -24,14 +24,14 @@ func GetQRCode(app *application.Application) httprouter.Handle {
 			return
 		}
 
-		if user.QRCode == "" {
+		if user.QRCode.String == "" {
 			apiformattertrait.WriteErrorResponse(w, http.StatusNotFound, "No QR Code found. Please wait a few seconds and try again")
 
 			return
 		}
 
 		if !printQr {
-			apiformattertrait.WriteResponse(w, map[string]string{"qrcode": user.QRCode})
+			apiformattertrait.WriteResponse(w, map[string]string{"qrcode": user.QRCode.String})
 
 			return
 		} else {
@@ -39,7 +39,7 @@ func GetQRCode(app *application.Application) httprouter.Handle {
 			w.Header().Set("Content-Disposition", "attachment; filename=\""+user.Name+".png\"")
 
 			var png []byte
-			png, err := qrcode.Encode(user.QRCode, qrcode.Medium, 256)
+			png, err := qrcode.Encode(user.QRCode.String, qrcode.Medium, 256)
 			if err != nil {
 				apiformattertrait.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
 

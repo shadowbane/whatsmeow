@@ -2,6 +2,7 @@ package wmeow
 
 import (
 	"context"
+	"database/sql"
 	"go.mau.fi/whatsmeow"
 	waProto "go.mau.fi/whatsmeow/binary/proto"
 	"go.mau.fi/whatsmeow/store"
@@ -19,8 +20,10 @@ import (
 // Key: UserID
 var ClientPointer = make(map[int64]*MeowClient)
 
-var KillChannel = make(map[int64](chan bool))
+var KillChannel = make(map[int64]chan bool)
 
+// StartClient starts a new whatsmeow client.
+// This will open a new connection, essentially creating a new 'web' session.
 func StartClient(user *models.User, app *application.Application, jid string, subscriptions []string) error {
 	if isConnected(user) == true {
 		return nil
@@ -101,7 +104,9 @@ func StartClient(user *models.User, app *application.Application, jid string, su
 		zap.S().Debugf("WMEOW\tKilling channel with UserID %d", user.ID)
 
 		// Clear QR code after pairing
-		user.QRCode = ""
+		user.QRCode = sql.NullString{
+			String: "",
+		}
 
 		result := app.Models.Save(&user)
 		if result.Error != nil {
@@ -212,7 +217,7 @@ func ConnectOnStartup(app *application.Application) {
 			if err != nil {
 				zap.S().Errorf("WMEOW\tError starting client: %+v", err)
 			}
-		}(&user, app, user.JID, subscribedEvents)
+		}(&user, app, user.JID.String, subscribedEvents)
 	}
 
 	zap.S().Debug("WMEOW\tConnected all users on startup")
