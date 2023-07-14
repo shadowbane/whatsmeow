@@ -72,15 +72,8 @@ func StartClient(user *models.User, app *application.Application, jid string, su
 	KillChannel[user.ID] = make(chan bool, 1)
 
 	zap.S().Debugf("KillChannel: %+v", KillChannel)
-	//err, _ = mycli.ConnectAndLogin(err)
-	//if err != nil {
-	//	zap.S().Errorf("WMEOW\tError: %v", err)
-	//}
 
 	// make mycli.ConnectAndLogin run in separate goroutine
-	// ToDo: This is still buggy as hell
-	// If we disconnect a client that has not been logged in,
-	// sometimes the qrChan is not closed and still receiving events
 	ctx, cancel := context.WithCancel(context.Background())
 	mycli.connection = &connectionContext{
 		ctx:   ctx,

@@ -99,87 +99,77 @@ func (mycli *MeowClient) myEventHandler(rawEvt interface{}) {
 }
 
 func (mycli *MeowClient) ConnectAndLogin(err error) (error, bool) {
-	for {
-		select {
-		case <-mycli.connection.ctx.Done():
+	if mycli.WAClient.Store.ID != nil {
+		zap.S().Debugf("WMEOW\tDevice %s already logged in", mycli.WAClient.Store.ID)
+		err = mycli.WAClient.Connect()
+		if err != nil {
+			zap.S().Panicf("WMEOW\tError: %v", err)
 
-			return nil, false
-		default:
-			if mycli.WAClient.Store.ID != nil {
-				zap.S().Debugf("WMEOW\tDevice %s already logged in", mycli.WAClient.Store.ID)
-				err = mycli.WAClient.Connect()
-				if err != nil {
-					zap.S().Panicf("WMEOW\tError: %v", err)
+			panic(err)
+		}
 
-					panic(err)
-				}
+		return nil, true
+	} else {
+		zap.S().Debug("WMEOW\tlogging in")
 
-				return nil, true
-			} else {
-				zap.S().Debug("WMEOW\tlogging in")
-
-				qrChan, err := mycli.WAClient.GetQRChannel(context.Background())
-				if err != nil {
-					if !errors.Is(err, whatsmeow.ErrQRStoreContainsID) {
-						zap.S().Errorf("WMEOW\tFailed to get QR channel: %v", err)
-					}
-
-					return err, true
-				} else {
-					zap.S().Debug("WMEOW\tGetting QR code")
-					err = mycli.WAClient.Connect()
-					if err != nil {
-						zap.S().Panicf("WMEOW\tError: %v", err)
-						panic(err)
-					}
-
-					for evt := range qrChan {
-						if evt.Event == "code" {
-
-							mycli.User.QRCode = evt.Code
-
-							result := mycli.DB.Save(&mycli.User)
-							if result.Error != nil {
-								zap.S().Errorf("WMEOW\tError updating mycli.User: %+v", result)
-
-								return result.Error, true
-							}
-						} else if evt.Event == "timeout" {
-							// Clear QR code from DB on timeout
-							mycli.User.QRCode = ""
-
-							result := mycli.DB.Save(&mycli.User)
-							if result.Error != nil {
-								zap.S().Errorf("WMEOW\tError updating mycli.User: %+v", result)
-
-								return result.Error, true
-							}
-
-							zap.S().Errorf("WMEOW\tQR Code Timeout... Killing channel...")
-
-							delete(ClientPointer, mycli.User.ID)
-							KillChannel[mycli.User.ID] <- true
-						} else if evt.Event == "success" {
-							zap.S().Debugf("WMEOW\tQR pairing ok!")
-							// Clear QR code after pairing
-							mycli.User.QRCode = ""
-
-							result := mycli.DB.Save(&mycli.User)
-							if result.Error != nil {
-								zap.S().Errorf("WMEOW\tError updating user: %+v", result)
-
-								return result.Error, true
-							}
-						} else {
-							zap.S().Debugf("WMEOW\tLogin event: %v", evt.Event)
-						}
-					}
-				}
+		qrChan, err := mycli.WAClient.GetQRChannel(mycli.connection.ctx)
+		if err != nil {
+			if !errors.Is(err, whatsmeow.ErrQRStoreContainsID) {
+				zap.S().Errorf("WMEOW\tFailed to get QR channel: %v", err)
 			}
 
-			mycli.connection.close()
+			return err, true
+		} else {
+			zap.S().Debug("WMEOW\tGetting QR code")
+			err = mycli.WAClient.Connect()
+			if err != nil {
+				zap.S().Panicf("WMEOW\tError: %v", err)
+				panic(err)
+			}
 
-			return nil, false
+			for evt := range qrChan {
+				if evt.Event == "code" {
+
+					mycli.User.QRCode = evt.Code
+
+					result := mycli.DB.Save(&mycli.User)
+					if result.Error != nil {
+						zap.S().Errorf("WMEOW\tError updating mycli.User: %+v", result)
+
+						return result.Error, true
+					}
+				} else if evt.Event == "timeout" {
+					// Clear QR code from DB on timeout
+					mycli.User.QRCode = ""
+
+					result := mycli.DB.Save(&mycli.User)
+					if result.Error != nil {
+						zap.S().Errorf("WMEOW\tError updating mycli.User: %+v", result)
+
+						return result.Error, true
+					}
+
+					zap.S().Errorf("WMEOW\tQR Code Timeout... Killing channel...")
+
+					delete(ClientPointer, mycli.User.ID)
+					KillChannel[mycli.User.ID] <- true
+				} else if evt.Event == "success" {
+					zap.S().Debugf("WMEOW\tQR pairing ok!")
+					// Clear QR code after pairing
+					mycli.User.QRCode = ""
+
+					result := mycli.DB.Save(&mycli.User)
+					if result.Error != nil {
+						zap.S().Errorf("WMEOW\tError updating user: %+v", result)
+
+						return result.Error, true
+					}
+				} else {
+					zap.S().Debugf("WMEOW\tLogin event: %v", evt.Event)
+				}
+			}
 		}
 	}
+
+	return nil, false
 }
