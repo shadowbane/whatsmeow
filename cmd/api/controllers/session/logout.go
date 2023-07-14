@@ -36,6 +36,7 @@ func Logout(app *application.Application) httprouter.Handle {
 		} else {
 			if client.IsConnected() {
 				zap.S().Infof("User %s is not logged in. Doing logout anyway", user.Name)
+				wmeow.KillChannel[user.ID] <- true
 			} else {
 				apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "User not connected")
 

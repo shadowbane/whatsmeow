@@ -10,7 +10,9 @@ require (
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/mattn/go-sqlite3 v1.14.17
 	github.com/mdp/qrterminal/v3 v3.1.1
+	github.com/oklog/ulid/v2 v2.1.0
 	github.com/shadowbane/go-logger v0.1.0-alpha
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	go.mau.fi/whatsmeow v0.0.0-20230710094417-93091c7024da
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.31.0
@@ -26,7 +28,6 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
-	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e // indirect
 	go.mau.fi/libsignal v0.1.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect

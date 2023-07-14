@@ -7,6 +7,8 @@ import (
 	"syscall"
 )
 
+var WaitGroup WaitGroupCount
+
 func Init(cb func()) {
 	sigs := make(chan os.Signal, 1)
 	terminate := make(chan bool, 1)
@@ -21,4 +23,6 @@ func Init(cb func()) {
 	<-terminate
 
 	cb()
+
+	WaitGroup.Wait()
 }

@@ -3,7 +3,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
@@ -13,7 +12,6 @@ import (
 	"gomeow/pkg/server"
 	"gomeow/pkg/wmeow"
 	"runtime"
-	"time"
 )
 
 func main() {
@@ -33,11 +31,6 @@ func main() {
 		zap.S().Fatal(err.Error())
 	}
 
-	// ToDo: Move somewhere else, after the device is connected.
-	// The queue should be pushed according to user's ID
-	// Load queue
-	//go app.LoadQueue(app.Meow.DeviceStore.ID.String())
-
 	srv := server.
 		Get().
 		WithAddr(app.Cfg.GetAPIPort()).
@@ -53,6 +46,9 @@ func main() {
 		}
 	}()
 
+	// This is the main entry point of the application
+	// if the device is logged in, it will be marked as connected
+	// and we will auto connect it to whatsapp
 	wmeow.ConnectOnStartup(app)
 
 	// ToDo: Move after device is connected
@@ -71,17 +67,17 @@ func main() {
 		// here, we need to wait for everything to be closed gracefully
 		// we will use context timeout, and wait for all the goroutines to finish
 		// if it's not closed after 5 seconds, we will force close it
-		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		//ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		wmeow.Shutdown()
 
 		if err := srv.Close(); err != nil {
 			zap.S().Error(err.Error())
 		}
 
-		select {
-		case <-ctx.Done():
-			zap.S().Debugf("Gracefully closed")
-		}
+		//select {
+		//case <-ctx.Done():
+		//	zap.S().Debugf("Gracefully closed")
+		//}
 		zap.S().Info("Application Closed")
 	})
 }
