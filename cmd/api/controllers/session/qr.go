@@ -24,6 +24,13 @@ func GetQRCode(app *application.Application) httprouter.Handle {
 			return
 		}
 
+		client := wmeow.ClientPointer[user.ID].WAClient
+		if client.IsConnected() && client.IsLoggedIn() {
+			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "User already logged in")
+
+			return
+		}
+
 		if user.QRCode.String == "" {
 			apiformattertrait.WriteErrorResponse(w, http.StatusNotFound, "No QR Code found. Please wait a few seconds and try again")
 
