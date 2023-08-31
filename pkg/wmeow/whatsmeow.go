@@ -51,12 +51,9 @@ func StartClient(user *models.User, app *application.Application, jid string, su
 	store.DeviceProps.Os = &osName
 
 	// init client log
-	logLevel := "ERROR"
-	if app.Cfg.GetAppEnv() != "production" {
-		logLevel = app.Cfg.GetLogLevel()
-	}
+	zap.S().Debugf("WA Client Log Level: %s", app.Cfg.GetWALogLevel())
+	clientLog := InitZapLogger("Client", app.Cfg.GetWALogLevel())
 
-	clientLog := InitZapLogger("Client", logLevel)
 	var client *whatsmeow.Client
 	client = whatsmeow.NewClient(deviceStore, clientLog)
 

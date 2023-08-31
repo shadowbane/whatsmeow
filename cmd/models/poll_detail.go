@@ -2,10 +2,19 @@ package models
 
 import (
 	"crypto/sha256"
+	"fmt"
 	"gomeow/pkg/helpers"
 	"gorm.io/gorm"
 	"time"
 )
+
+type PollDetailDTO struct {
+	ID        string    `json:"id"`
+	PollId    string    `json:"poll_id"`
+	Option    string    `json:"option"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
 
 type PollDetail struct {
 	ID           string    `json:"id" gorm:"type:char(26);primaryKey;autoIncrement:false"`
@@ -33,8 +42,20 @@ func (p *PollDetail) BeforeCreate(tx *gorm.DB) (err error) {
 
 	if p.OptionSha256 == "" {
 		sha256val := sha256.Sum256([]byte(p.Option))
-		p.OptionSha256 = string(sha256val[:])
+		p.OptionSha256 = fmt.Sprintf("%x", sha256val)
+		//zap.S().Debugf("sha256val: %s", string(sha256val[:]))
+		//p.OptionSha256 = string(sha256val[:])
 	}
 
 	return nil
+}
+
+func (p *PollDetail) ToResponseDTO() *PollDetailDTO {
+	return &PollDetailDTO{
+		ID:        p.ID,
+		PollId:    p.PollId,
+		Option:    p.Option,
+		CreatedAt: p.CreatedAt,
+		UpdatedAt: p.UpdatedAt,
+	}
 }

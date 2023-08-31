@@ -36,6 +36,8 @@ type Config struct {
 
 	apiPort  string
 	logLevel string
+
+	waLogLevel string
 }
 
 func Get() *Config {
@@ -71,6 +73,7 @@ func Get() *Config {
 	}
 
 	flag.StringVar(&conf.logLevel, "log level", getenv("LOG_LEVEL", "info"), "Log level")
+	flag.StringVar(&conf.waLogLevel, "whatsapp log level", getenv("WA_LOG_LEVEL", "error"), "WhatsApp Log level")
 
 	// load logger config
 	logger.Init(logger.LoadEnvForLogger())
@@ -123,8 +126,11 @@ func (c *Config) GetLogLevel() string {
 	return strings.ToUpper(c.logLevel)
 }
 
-func (c *Config) ConnectToWhatsmeowDB() *sqlstore.Container {
+func (c *Config) GetWALogLevel() string {
+	return strings.ToUpper(c.waLogLevel)
+}
 
+func (c *Config) ConnectToWhatsmeowDB() *sqlstore.Container {
 	logLevel := "ERROR"
 	if c.appEnv != "production" {
 		logLevel = c.GetLogLevel()

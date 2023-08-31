@@ -7,6 +7,8 @@ import (
 	"gomeow/pkg/middleware"
 
 	messagecontroller "gomeow/cmd/api/controllers/message"
+	pollcontroller "gomeow/cmd/api/controllers/poll"
+	polldetailcontroller "gomeow/cmd/api/controllers/poll_detail"
 	sessioncontroller "gomeow/cmd/api/controllers/session"
 	usercontroller "gomeow/cmd/api/controllers/user"
 )
@@ -16,6 +18,7 @@ func Get(app *application.Application) *httprouter.Router {
 
 	mux := httprouter.New()
 
+	// === DEPRECATED SECTION ===
 	// index
 	mux.GET("/api/v1/messages", controllers.MessageIndex(app))
 
@@ -29,6 +32,8 @@ func Get(app *application.Application) *httprouter.Router {
 
 	// solo.wablas.com Compatible API
 	mux.POST("/api/v2/send-message", m.Chain(controllers.MessageSend(app), "auth", "default"))
+
+	// === END DEPRECATED SECTION ===
 
 	// Users
 	// index
@@ -44,14 +49,18 @@ func Get(app *application.Application) *httprouter.Router {
 
 	// Polls
 	// index
+	mux.GET("/api/v1/poll", m.Chain(pollcontroller.Index(app), "auth"))
 	// store
+	mux.POST("/api/v1/poll", m.Chain(pollcontroller.Store(app), "auth"))
 	// show
 	// update
 	// delete
 
 	// Poll Details
 	// index
+	mux.GET("/api/v1/poll/:pollId", m.Chain(polldetailcontroller.Index(app), "auth"))
 	// store
+	mux.POST("/api/v1/poll/:pollId", m.Chain(polldetailcontroller.Store(app), "auth"))
 	// show
 	// update
 	// delete

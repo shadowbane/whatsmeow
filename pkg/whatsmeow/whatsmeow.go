@@ -98,12 +98,7 @@ func Init(c *config.Config, container *sqlstore.Container, db *gorm.DB) *Meow {
 	zap.S().Debug("JID: ", deviceStore.ID)
 
 	// init client log
-	logLevel := "ERROR"
-	if c.GetAppEnv() != "production" {
-		logLevel = "INFO"
-	}
-
-	clientLog := InitZapLogger("Client", logLevel)
+	clientLog := InitZapLogger("Client", c.GetWALogLevel())
 
 	// init client
 	zap.S().Info("Initializing WhatsMeow Client")
