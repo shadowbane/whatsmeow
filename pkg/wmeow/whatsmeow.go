@@ -36,7 +36,7 @@ func StartClient(user *models.User, app *application.Application, jid string, su
 	if jid == "" {
 		deviceStore = app.DB.NewDevice()
 	} else {
-		jid, _ := parseJID(jid)
+		jid, _ := ParseJID(jid)
 
 		deviceStore, err = app.DB.GetDevice(jid)
 		if err != nil {
@@ -138,8 +138,8 @@ func isConnected(user *models.User) bool {
 	return false
 }
 
-// parseJID parses a JID from a string.
-func parseJID(arg string) (types.JID, bool) {
+// ParseJID parses a JID from a string.
+func ParseJID(arg string) (types.JID, bool) {
 	if arg == "" {
 		return types.NewJID("", types.DefaultUserServer), false
 	}
@@ -151,6 +151,10 @@ func parseJID(arg string) (types.JID, bool) {
 	phonenumber := ""
 	phonenumber = strings.Split(arg, "@")[0]
 	phonenumber = strings.Split(phonenumber, ".")[0]
+
+	// We need to remove everything after ":"
+	phonenumber = strings.Split(phonenumber, ":")[0]
+
 	b := true
 	for _, c := range phonenumber {
 		if c < '0' || c > '9' {
@@ -176,7 +180,7 @@ func parseJID(arg string) (types.JID, bool) {
 			return recipient, false
 		} else if recipient.User == "" {
 			zap.S().Errorf("WMEOW\tError: %s", err)
-			zap.S().Error("WMEOW\tInvalid jid. No server specifieds")
+			zap.S().Error("WMEOW\tInvalid jid. No server specified")
 
 			return recipient, false
 		}

@@ -3,10 +3,10 @@ package message
 import (
 	"encoding/json"
 	"github.com/julienschmidt/httprouter"
-	"go.mau.fi/whatsmeow"
 	"go.uber.org/zap"
 	"gomeow/cmd/models"
 	"gomeow/pkg/application"
+	"gomeow/pkg/wmeow"
 	"net/http"
 
 	apiformattertrait "gomeow/cmd/api/controllers/traits"
@@ -16,8 +16,23 @@ func SendText(app *application.Application) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		user := r.Context().Value("user").(models.User)
 
-		var request TextMessage
+		// check if user is connected
+		if wmeow.ClientPointer[user.ID] == nil {
+			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "User not connected")
 
+			return
+		}
+
+		// check if user is logged in
+		client := wmeow.ClientPointer[user.ID].WAClient
+		if !client.IsConnected() && !client.IsLoggedIn() {
+			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "User is not logged in")
+
+			return
+		}
+
+		// create request instance
+		var request TextMessage
 		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
 			apiformattertrait.WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
@@ -26,7 +41,7 @@ func SendText(app *application.Application) httprouter.Handle {
 		}
 
 		// convert phone number to acceptable format
-		request.Phone = stripPhoneNumber(request.Phone)
+		request.Destination = stripPhoneNumber(request.Destination)
 
 		// validating request
 		validationError := app.Validator.Validate(request)
@@ -40,14 +55,14 @@ func SendText(app *application.Application) httprouter.Handle {
 		// Do everything else here
 
 		// generate new messageID
-		newMessageId := whatsmeow.GenerateMessageID()
+		newMessageId := client.GenerateMessageID()
 
 		// store
 		message := models.Message{
 			JID:         user.JID.String,
 			UserId:      user.ID,
 			MessageId:   newMessageId,
-			Destination: request.Phone,
+			Destination: request.Destination,
 			Body:        request.Message,
 		}
 
@@ -59,6 +74,46 @@ func SendText(app *application.Application) httprouter.Handle {
 			return
 		}
 
-		apiformattertrait.WriteResponse(w, message)
+		// generate JID from message.Desination
+		//destinationJID, _ := wmeow.ParseJID(message.Destination)
+		//
+		//options := []string{
+		//	0: "Yes",
+		//	1: "No",
+		//}
+		//
+		//// test
+		//pollMsg := client.BuildPollCreation(
+		//	"Test Polling",
+		//	options,
+		//	1,
+		//)
+		//pollData, pollErr := client.SendMessage(context.Background(), destinationJID, pollMsg)
+		//
+		//zap.S().Debugf("PollData: %+v", pollData)
+		//if pollErr != nil {
+		//	zap.S().Errorf("Error sending polling: %+v", pollErr)
+		//}
+
+		// send message
+		err = wmeow.ClientPointer[user.ID].SendTextMessage(newMessageId, request.Destination, request.Message)
+
+		returnMessage := &ReturnMessageDTO{
+			MessageId:   newMessageId,
+			Destination: request.Destination,
+			Message:     request.Message,
+			Sent:        message.Sent,
+			Read:        message.Read,
+			Failed:      message.Failed,
+		}
+
+		returnMessage.ReadAt = ""
+
+		if message.ReadAt.Valid {
+			returnMessage.ReadAt = message.ReadAt.Time.String()
+
+		}
+
+		apiformattertrait.WriteResponse(w, returnMessage)
 	}
 }

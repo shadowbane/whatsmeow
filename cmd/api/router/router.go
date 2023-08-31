@@ -42,6 +42,20 @@ func Get(app *application.Application) *httprouter.Router {
 	// delete
 	mux.DELETE("/api/v1/user/:id", m.Chain(usercontroller.Delete(app), "auth"))
 
+	// Polls
+	// index
+	// store
+	// show
+	// update
+	// delete
+
+	// Poll Details
+	// index
+	// store
+	// show
+	// update
+	// delete
+
 	// Sessions
 	// connect
 	mux.POST("/api/v1/session/connect", m.Chain(sessioncontroller.Connect(app), "auth"))
@@ -54,7 +68,7 @@ func Get(app *application.Application) *httprouter.Router {
 
 	// Messages
 	// index
-	mux.GET("/api/v1/message", m.Chain(messagecontroller.Index(app), "auth"))
+	mux.GET("/api/v1/message/text", m.Chain(messagecontroller.Index(app), "auth"))
 	// send text
 	mux.POST("/api/v1/message/text", m.Chain(messagecontroller.SendText(app), "auth"))
 

@@ -5,11 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"go.mau.fi/whatsmeow"
+	waProto "go.mau.fi/whatsmeow/binary/proto"
 	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 	"go.uber.org/zap"
 	"gomeow/cmd/models"
+	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
 	waLog "go.mau.fi/whatsmeow/util/log"
@@ -81,7 +83,33 @@ func (mycli *MeowClient) myEventHandler(rawEvt interface{}) {
 	case *events.StreamReplaced:
 		zap.S().Warnf("Stream Replaced!")
 	case *events.Message:
+		if evt.Message.GetPollUpdateMessage() != nil {
+			pollVote, err := mycli.WAClient.DecryptPollVote(evt)
+
+			if err != nil {
+				zap.S().Errorf("WMEOW\tError decrypting poll vote: %v", err)
+				return
+			}
+			zap.S().Infof("WMEOW\tPoll vote received from %s In %s", evt.Info.Sender, evt.Message.GetMessageContextInfo())
+			for _, hash := range pollVote.GetSelectedOptions() {
+				zap.S().Infof("WMEOW\tPoll vote: - %X", hash)
+			}
+		} else {
+			zap.S().Debugf("WMEOW\tReceived message form %s: %s", evt.Info.Sender, evt.Message.GetConversation())
+		}
+
 	case *events.Receipt:
+		if evt.Type == events.ReceiptTypeRead {
+			zap.S().Debugf("WMEOW\tReceived a read receipt [%s]", evt.MessageIDs)
+
+			go func() {
+				for _, messageId := range evt.MessageIDs {
+					mycli.DB.Model(&models.Message{}).
+						Where("message_id = ?", messageId).
+						Update("read", true)
+				}
+			}()
+		}
 	case *events.Presence:
 	case *events.HistorySync:
 	case *events.AppState:
@@ -185,4 +213,33 @@ func (mycli *MeowClient) ConnectAndLogin(err error) (error, bool) {
 	}
 
 	return nil, false
+}
+
+// SendTextMessage sends a message to a given JID
+func (mycli *MeowClient) SendTextMessage(messageId string, to string, message string) error {
+	zap.S().Debugf("Sending message with ID: %s and content: %s to: %s", messageId, message, to)
+
+	newJid := types.NewJID(to, "s.whatsapp.net")
+	newMessage := &waProto.Message{
+		ExtendedTextMessage: &waProto.ExtendedTextMessage{
+			Text: proto.String(message),
+		},
+	}
+
+	go func() {
+		_, err := mycli.WAClient.SendMessage(mycli.connection.ctx, newJid, newMessage, whatsmeow.SendRequestExtra{
+			ID:   messageId,
+			Peer: false,
+		})
+
+		if err != nil {
+			zap.S().Errorf(err.Error())
+		}
+
+		mycli.DB.Model(&models.Message{}).
+			Where("message_id = ?", messageId).
+			Update("sent", true)
+	}()
+
+	return nil
 }

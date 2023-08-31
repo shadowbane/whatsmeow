@@ -1,8 +1,19 @@
 package message
 
 type TextMessage struct {
-	Phone   string `json:"phone" validate:"required,numeric,min=5,max=20"`
-	Message string `json:"message" validate:"required"`
+	Destination string `json:"destination" validate:"required,numeric,min=5,max=20"`
+	Message     string `json:"message" validate:"required"`
+}
+
+type ReturnMessageDTO struct {
+	ID          string `json:"id"`
+	MessageId   string `json:"message_id"`
+	Destination string `json:"destination"`
+	Message     string `json:"message"`
+	Sent        bool   `json:"sent"`
+	Read        bool   `json:"read"`
+	Failed      bool   `json:"failed"`
+	ReadAt      string `json:"read_at"`
 }
 
 // stripPhoneNumber removes the first character of a phone number if it is a "+" or "0".
