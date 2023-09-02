@@ -136,6 +136,13 @@ func (mycli *MeowClient) SendTextMessage(messageId string, to string, message st
 	zap.S().Debugf("Sending message with ID: %s to: %s", messageId, to)
 
 	go func() {
+		// mark myself as typing
+		_ = mycli.WAClient.SendChatPresence(
+			types.NewJID(to, "s.whatsapp.net"),
+			types.ChatPresenceComposing,
+			types.ChatPresenceMediaText,
+		)
+
 		// sleep between 1 and 10 seconds
 		// ToDo: Implement Queue
 		time.Sleep(time.Duration(rand.Intn(10-1)+1) * time.Second)
@@ -176,6 +183,13 @@ func (mycli *MeowClient) SendPollMessage(messageId string, to string, dto models
 	zap.S().Debugf("Sending PollMessage with ID: %s to: %s", messageId, to)
 
 	go func() {
+		// mark myself as typing
+		_ = mycli.WAClient.SendChatPresence(
+			types.NewJID(to, "s.whatsapp.net"),
+			types.ChatPresenceComposing,
+			types.ChatPresenceMediaText,
+		)
+
 		// sleep between 1 and 10 seconds
 		// ToDo: Implement Queue
 		time.Sleep(time.Duration(rand.Intn(10-1)+1) * time.Second)
