@@ -74,7 +74,7 @@ func SendPoll(app *application.Application) httprouter.Handle {
 		})
 
 		if result.RowsAffected == 0 {
-			zap.S().Debugf("Poll not found: %+v", result)
+			zap.S().Errorf("Poll not found: %+v", result)
 			apiformattertrait.WriteErrorResponse(w, http.StatusNotFound, "Poll not found")
 			return
 		}
@@ -104,6 +104,11 @@ func SendPoll(app *application.Application) httprouter.Handle {
 		// send message
 		err = wmeow.ClientPointer[user.ID].SendPollMessage(newMessageId, request.Destination, pollDTO)
 
-		apiformattertrait.WriteResponse(w, message)
+		apiformattertrait.WriteResponse(w, &ReturnMessageDTO{
+			ID:          message.ID,
+			MessageId:   message.MessageId,
+			Destination: message.Destination,
+			Poll:        pollDTO,
+		})
 	}
 }
