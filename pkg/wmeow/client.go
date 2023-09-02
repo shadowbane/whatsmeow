@@ -5,15 +5,16 @@ import (
 	"database/sql"
 	"errors"
 	"go.mau.fi/whatsmeow"
-	waProto "go.mau.fi/whatsmeow/binary/proto"
 	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/types"
-	"go.mau.fi/whatsmeow/types/events"
 	"go.uber.org/zap"
 	"gomeow/cmd/models"
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
+	"math/rand"
+	"time"
 
+	waProto "go.mau.fi/whatsmeow/binary/proto"
 	waLog "go.mau.fi/whatsmeow/util/log"
 )
 
@@ -33,6 +34,8 @@ type connectionContext struct {
 	close context.CancelFunc
 }
 
+// Logout logs out of WAClient
+// Deletes the JID from the DB, and logout connected devices.
 func (mycli *MeowClient) Logout() {
 	mycli.User.IsConnected = false
 	mycli.User.JID = sql.NullString{String: ""}
@@ -43,93 +46,6 @@ func (mycli *MeowClient) Logout() {
 	}
 	KillChannel[mycli.User.ID] <- true
 	zap.S().Infof("WMEOW\tLogged out of WAClient.")
-}
-
-// myEventHandler is the event handler for the WAClient.
-// This will handle all the events from the WAClient.
-func (mycli *MeowClient) myEventHandler(rawEvt interface{}) {
-	switch evt := rawEvt.(type) {
-	case *events.AppStateSyncComplete:
-	case *events.Connected, *events.PushNameSetting:
-		zap.S().Debugf("WMEOW\tConnected to WAClient.")
-		if len(mycli.WAClient.Store.PushName) == 0 {
-			return
-		}
-
-		err := mycli.WAClient.SendPresence(types.PresenceAvailable)
-		if err != nil {
-			zap.S().Errorf("WMEOW\tFailed to send available presence: %+v", err)
-		} else {
-			zap.S().Info("Marked self as available")
-		}
-
-		mycli.User.IsConnected = true
-		result := mycli.DB.Save(&mycli.User)
-		if result.Error != nil {
-			zap.S().Errorf("WMEOW\tError updating user: %+v", result)
-		}
-	case *events.PairSuccess:
-		zap.S().Infof("WMEOW\tPairing success for %d. JID: %s", mycli.User.ID, evt.ID.String())
-		mycli.User.JID = sql.NullString{
-			String: evt.ID.String(),
-			Valid:  true,
-		}
-		mycli.User.IsConnected = true
-
-		result := mycli.DB.Save(&mycli.User)
-		if result.Error != nil {
-			zap.S().Errorf("WMEOW\tError updating user: %+v", result)
-		}
-	case *events.StreamReplaced:
-		zap.S().Warnf("Stream Replaced!")
-	case *events.Message:
-		if evt.Message.GetPollUpdateMessage() != nil {
-			pollVote, err := mycli.WAClient.DecryptPollVote(evt)
-
-			if err != nil {
-				zap.S().Errorf("WMEOW\tError decrypting poll vote: %v", err)
-				return
-			}
-			zap.S().Infof("WMEOW\tPoll vote received from %s In %s", evt.Info.Sender, evt.Message.GetMessageContextInfo())
-			for _, hash := range pollVote.GetSelectedOptions() {
-				zap.S().Infof("WMEOW\tPoll vote: - %X", hash)
-			}
-		} else {
-			zap.S().Debugf("WMEOW\tReceived message form %s: %s", evt.Info.Sender, evt.Message.GetConversation())
-		}
-
-	case *events.Receipt:
-		if evt.Type == events.ReceiptTypeRead {
-			zap.S().Debugf("WMEOW\tReceived a read receipt [%s]", evt.MessageIDs)
-
-			go func() {
-				for _, messageId := range evt.MessageIDs {
-					mycli.DB.Model(&models.Message{}).
-						Where("message_id = ?", messageId).
-						Update("read", true)
-				}
-			}()
-		}
-	case *events.Presence:
-	case *events.HistorySync:
-	case *events.AppState:
-	case *events.LoggedOut:
-		mycli.Logout()
-	case *events.ChatPresence:
-	case *events.CallOffer:
-		zap.S().Infof("Got CallOffer event - %+v", evt)
-	case *events.CallAccept:
-		zap.S().Infof("Got CallAccept event - %+v", evt)
-	case *events.CallTerminate:
-		zap.S().Infof("Got CallTerminate event - %+v", evt)
-	case *events.CallOfferNotice:
-		zap.S().Infof("Got CallOfferNotice event - %+v", evt)
-	case *events.CallRelayLatency:
-		zap.S().Infof("Got CallRelayLatency event - %+v", evt)
-	default:
-		zap.S().Debugf("WMEOW\tUnhandled event: %v", evt)
-
-	}
 }
 
 // ConnectAndLogin connects to the WAClient and logs in if necessary.
@@ -217,28 +133,88 @@ func (mycli *MeowClient) ConnectAndLogin(err error) (error, bool) {
 
 // SendTextMessage sends a message to a given JID
 func (mycli *MeowClient) SendTextMessage(messageId string, to string, message string) error {
-	zap.S().Debugf("Sending message with ID: %s and content: %s to: %s", messageId, message, to)
-
-	newJid := types.NewJID(to, "s.whatsapp.net")
-	newMessage := &waProto.Message{
-		ExtendedTextMessage: &waProto.ExtendedTextMessage{
-			Text: proto.String(message),
-		},
-	}
+	zap.S().Debugf("Sending message with ID: %s to: %s", messageId, to)
 
 	go func() {
-		_, err := mycli.WAClient.SendMessage(mycli.connection.ctx, newJid, newMessage, whatsmeow.SendRequestExtra{
-			ID:   messageId,
-			Peer: false,
-		})
+		// sleep between 1 and 10 seconds
+		// ToDo: Implement Queue
+		time.Sleep(time.Duration(rand.Intn(10-1)+1) * time.Second)
+
+		_, err := mycli.WAClient.SendMessage(
+			mycli.connection.ctx,
+			types.NewJID(to, "s.whatsapp.net"),
+			&waProto.Message{
+				ExtendedTextMessage: &waProto.ExtendedTextMessage{
+					Text: proto.String(message),
+				},
+			},
+			whatsmeow.SendRequestExtra{
+				ID:   messageId,
+				Peer: false,
+			})
 
 		if err != nil {
-			zap.S().Errorf(err.Error())
+			zap.S().Errorf("Error when sending text message: %s", err.Error())
+			mycli.DB.Model(&models.Message{}).
+				Where("message_id = ?", messageId).
+				Update("failed", true).
+				Update("failed_at", time.Now())
+			return
 		}
 
 		mycli.DB.Model(&models.Message{}).
 			Where("message_id = ?", messageId).
-			Update("sent", true)
+			Update("sent", true).
+			Update("sent_at", time.Now())
+	}()
+
+	return nil
+}
+
+// SendPollMessage sends poll message to a given JID
+func (mycli *MeowClient) SendPollMessage(messageId string, to string, dto models.PollDTO) error {
+	zap.S().Debugf("Sending PollMessage with ID: %s to: %s", messageId, to)
+
+	go func() {
+		// sleep between 1 and 10 seconds
+		// ToDo: Implement Queue
+		time.Sleep(time.Duration(rand.Intn(10-1)+1) * time.Second)
+
+		// pluck only the options from pollDTO.Details
+		options := make([]string, len(dto.Details))
+		for i, detail := range dto.Details {
+			options[i] = detail.Option
+		}
+
+		// Send Poll
+		pollMsg := mycli.WAClient.BuildPollCreation(
+			dto.Question,
+			options,
+			1,
+		)
+
+		_, err := mycli.WAClient.SendMessage(
+			mycli.connection.ctx,
+			types.NewJID(to, "s.whatsapp.net"),
+			pollMsg,
+			whatsmeow.SendRequestExtra{
+				ID:   messageId,
+				Peer: false,
+			})
+
+		if err != nil {
+			zap.S().Errorf("Error when sending poll message: %s", err.Error())
+			mycli.DB.Model(&models.PollMessage{}).
+				Where("message_id = ?", messageId).
+				Update("failed", true).
+				Update("failed_at", time.Now())
+			return
+		}
+
+		mycli.DB.Model(&models.PollMessage{}).
+			Where("message_id = ?", messageId).
+			Update("sent", true).
+			Update("sent_at", time.Now())
 	}()
 
 	return nil

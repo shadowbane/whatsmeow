@@ -1,4 +1,4 @@
-package message
+package pollmessage
 
 import (
 	"encoding/json"
@@ -8,35 +8,33 @@ import (
 	"gomeow/pkg/application"
 	"gomeow/pkg/wmeow"
 	"net/http"
+	"sort"
 
 	apiformattertrait "gomeow/cmd/api/controllers/traits"
 )
 
-func SendText(app *application.Application) httprouter.Handle {
+func SendPoll(app *application.Application) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		user := r.Context().Value("user").(models.User)
 
-		// check if user is connected
+		//check if user is connected
 		if wmeow.ClientPointer[user.ID] == nil {
 			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "User not connected")
-
 			return
 		}
 
-		// check if user is logged in
+		//check if user is logged in
 		client := wmeow.ClientPointer[user.ID].WAClient
 		if !client.IsConnected() || !client.IsLoggedIn() {
 			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "User is not logged in")
-
 			return
 		}
 
 		// create request instance
-		var request TextMessage
+		var request CreateValidator
 		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
 			apiformattertrait.WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
-
 			return
 		}
 
@@ -48,7 +46,36 @@ func SendText(app *application.Application) httprouter.Handle {
 		if validationError != nil {
 			zap.S().Debugf("Error validating request: %+v", validationError)
 			apiformattertrait.WriteMultipleErrorResponse(w, http.StatusUnprocessableEntity, validationError)
+			return
+		}
 
+		// Load Poll
+		poll := models.Poll{
+			ID:     request.PollId,
+			UserId: user.ID,
+		}
+		//var pollDTO models.PollDTO
+		pollDTO := models.PollDTO{
+			Details: make([]models.PollDetailDTO, 0),
+		}
+		result := app.Models.
+			Preload("Details").
+			First(&poll).
+			Scan(&pollDTO)
+
+		// convert []PollDetail to []PollDetailDTO
+		for _, detail := range poll.Details {
+			pollDTO.Details = append(pollDTO.Details, *detail.ToResponseDTO())
+		}
+
+		// sort pollDTO.Details ascending by Option
+		sort.Slice(pollDTO.Details, func(i, j int) bool {
+			return pollDTO.Details[i].Option < pollDTO.Details[j].Option
+		})
+
+		if result.RowsAffected == 0 {
+			zap.S().Debugf("Poll not found: %+v", result)
+			apiformattertrait.WriteErrorResponse(w, http.StatusNotFound, "Poll not found")
 			return
 		}
 
@@ -58,61 +85,25 @@ func SendText(app *application.Application) httprouter.Handle {
 		newMessageId := client.GenerateMessageID()
 
 		// store
-		message := models.Message{
+		message := models.PollMessage{
+			PollId:      request.PollId,
 			JID:         user.JID.String,
 			UserId:      user.ID,
 			MessageId:   newMessageId,
 			Destination: request.Destination,
-			Body:        request.Message,
 		}
 
-		// create user
-		result := app.Models.Create(&message)
-		if result.Error != nil {
-			zap.S().Debugf("Error creating message: %+v", result)
-			apiformattertrait.WriteErrorResponse(w, http.StatusInternalServerError, result.Error.Error())
+		// create poll message
+		createResult := app.Models.Create(&message)
+		if createResult.Error != nil {
+			zap.S().Debugf("Error creating message: %+v", createResult)
+			apiformattertrait.WriteErrorResponse(w, http.StatusInternalServerError, createResult.Error.Error())
 			return
 		}
 
-		// generate JID from message.Desination
-		//destinationJID, _ := wmeow.ParseJID(message.Destination)
-		//
-		//options := []string{
-		//	0: "Yes",
-		//	1: "No",
-		//}
-		//
-		//// test
-		//pollMsg := client.BuildPollCreation(
-		//	"Test Polling",
-		//	options,
-		//	1,
-		//)
-		//pollData, pollErr := client.SendMessage(context.Background(), destinationJID, pollMsg)
-		//
-		//zap.S().Debugf("PollData: %+v", pollData)
-		//if pollErr != nil {
-		//	zap.S().Errorf("Error sending polling: %+v", pollErr)
-		//}
-
 		// send message
-		err = wmeow.ClientPointer[user.ID].SendTextMessage(newMessageId, request.Destination, request.Message)
+		err = wmeow.ClientPointer[user.ID].SendPollMessage(newMessageId, request.Destination, pollDTO)
 
-		returnMessage := &ReturnMessageDTO{
-			MessageId:   newMessageId,
-			Destination: request.Destination,
-			Message:     request.Message,
-			Sent:        message.Sent,
-			Read:        message.Read,
-			Failed:      message.Failed,
-		}
-
-		returnMessage.ReadAt = ""
-
-		if message.ReadAt.Valid {
-			returnMessage.ReadAt = message.ReadAt.Time.String()
-		}
-
-		apiformattertrait.WriteResponse(w, returnMessage)
+		apiformattertrait.WriteResponse(w, message)
 	}
 }

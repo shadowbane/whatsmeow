@@ -29,7 +29,7 @@ type PollDetail struct {
 }
 
 func (p *PollDetail) TableName() string {
-	return "poll_details"
+	return "whatsmeow_poll_details"
 }
 
 // BeforeCreate will set a ULID using helper.NewULID() rather than numeric ID.
@@ -43,8 +43,6 @@ func (p *PollDetail) BeforeCreate(tx *gorm.DB) (err error) {
 	if p.OptionSha256 == "" {
 		sha256val := sha256.Sum256([]byte(p.Option))
 		p.OptionSha256 = fmt.Sprintf("%x", sha256val)
-		//zap.S().Debugf("sha256val: %s", string(sha256val[:]))
-		//p.OptionSha256 = string(sha256val[:])
 	}
 
 	return nil

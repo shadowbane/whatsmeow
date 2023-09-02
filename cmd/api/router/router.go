@@ -9,6 +9,7 @@ import (
 	messagecontroller "gomeow/cmd/api/controllers/message"
 	pollcontroller "gomeow/cmd/api/controllers/poll"
 	polldetailcontroller "gomeow/cmd/api/controllers/poll_detail"
+	pollmessagecontroller "gomeow/cmd/api/controllers/pollmessage"
 	sessioncontroller "gomeow/cmd/api/controllers/session"
 	usercontroller "gomeow/cmd/api/controllers/user"
 )
@@ -75,11 +76,17 @@ func Get(app *application.Application) *httprouter.Router {
 	// Logout
 	mux.POST("/api/v1/session/logout", m.Chain(sessioncontroller.Logout(app), "auth"))
 
-	// Messages
+	// Messages - Text
 	// index
 	mux.GET("/api/v1/message/text", m.Chain(messagecontroller.Index(app), "auth"))
 	// send text
 	mux.POST("/api/v1/message/text", m.Chain(messagecontroller.SendText(app), "auth"))
+
+	// Messages - Poll
+	// index
+	mux.GET("/api/v1/message/poll", m.Chain(pollmessagecontroller.Index(app), "auth"))
+	// send poll
+	mux.POST("/api/v1/message/poll", m.Chain(pollmessagecontroller.SendPoll(app), "auth"))
 
 	return mux
 }

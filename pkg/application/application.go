@@ -36,6 +36,8 @@ func Start() (*Application, error) {
 		&models.User{},
 		&models.Poll{},
 		&models.PollDetail{},
+		&models.PollMessage{},
+		&models.PollHistory{},
 	}...)
 	if err != nil {
 		zap.S().Fatalf("Error running auto migration: %v", err)

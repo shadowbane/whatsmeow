@@ -14,24 +14,24 @@ type PollDTO struct {
 	Question  string          `json:"question"`
 	CreatedAt time.Time       `json:"created_at"`
 	UpdatedAt time.Time       `json:"updated_at"`
-	Details   []PollDetailDTO `json:"details"`
+	Details   []PollDetailDTO `json:"details" gorm:"foreignKey:PollId;references:ID;"`
 }
 
 type Poll struct {
 	ID        string    `json:"id" gorm:"type:char(26);primaryKey;autoIncrement:false"`
-	Code      string    `json:"code" gorm:"Column:code;type:varchar(5);not null;unique"`
+	Code      string    `json:"code" gorm:"Column:code;type:varchar(5);not null"`
 	UserId    int64     `json:"user_id" gorm:"Column:user_id;type:bigint;not null"`
 	Question  string    `json:"question" gorm:"Column:question;type:varchar(255);not null"`
 	CreatedAt time.Time `json:"created_at" gorm:"type:timestamp"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"type:timestamp"`
 
 	// Associations
-	Details []PollDetail `gorm:"foreignKey:PollId;references:ID;"`
-	User    User         `gorm:"foreignKey:UserId;references:ID;constraint:OnDelete:RESTRICT"`
+	Details []PollDetail `json:"details" gorm:"foreignKey:PollId;references:ID;"`
+	User    User         `json:"user" gorm:"foreignKey:UserId;references:ID;constraint:OnDelete:RESTRICT"`
 }
 
 func (p *Poll) TableName() string {
-	return "polls"
+	return "whatsmeow_polls"
 }
 
 // BeforeCreate will set a ULID using helper.NewULID() rather than numeric ID.
@@ -42,7 +42,7 @@ func (p *Poll) BeforeCreate(tx *gorm.DB) (err error) {
 	}
 
 	if p.Code == "" {
-		p.Code = RandStringBytesMaskImprSrcSB(5)
+		p.Code = RandStringBytesMaskImprSrcSB(2)
 	}
 
 	return nil

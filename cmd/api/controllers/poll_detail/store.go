@@ -46,7 +46,7 @@ func Store(app *application.Application) httprouter.Handle {
 		// create models.PollDetail from request
 		pollDetail := models.PollDetail{
 			PollId: poll.ID,
-			Option: poll.Code + " - " + request.Option,
+			Option: request.Option,
 		}
 
 		// create pollDetail

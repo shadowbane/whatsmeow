@@ -20,6 +20,7 @@ import (
 	"strings"
 )
 
+// Deprecated: Not used in new version
 type Meow struct {
 	DeviceStore *store.Device
 	ClientLog   waLog.Logger
@@ -27,47 +28,60 @@ type Meow struct {
 	DB          *gorm.DB
 }
 
+// Deprecated: Not used in new version
 type PendingMessage struct {
 	Message   string `json:"message"`
 	To        string `json:"to"`
 	MessageId string `json:"messageId"`
 }
 
+// Deprecated: Not used in new version
 type CustomLogger waLog.Logger
 
+// Deprecated: Not used in new version
 type zapLogger struct {
 	module  string
 	minimum int
 }
 
+// Deprecated: Not used in new version
 func (s *zapLogger) Errorf(msg string, args ...interface{}) {
 	if levelToInt["ERROR"] < s.minimum {
 		return
 	}
 	zap.S().Errorf("[WhatsApp]\t"+msg, args...)
 }
+
+// Deprecated: Not used in new version
 func (s *zapLogger) Warnf(msg string, args ...interface{}) {
 	if levelToInt["WARN"] < s.minimum {
 		return
 	}
 	zap.S().Warnf("[WhatsApp]\t"+msg, args...)
 }
+
+// Deprecated: Not used in new version
 func (s *zapLogger) Infof(msg string, args ...interface{}) {
 	if levelToInt["INFO"] < s.minimum {
 		return
 	}
 	zap.S().Infof("[WhatsApp]\t"+msg, args...)
 }
+
+// Deprecated: Not used in new version
 func (s *zapLogger) Debugf(msg string, args ...interface{}) {
 	if levelToInt["DEBUG"] < s.minimum {
 		return
 	}
 	zap.S().Debugf("[WhatsApp]\t"+msg, args...)
 }
+
+// Deprecated: Not used in new version
 func (s *zapLogger) Sub(module string) waLog.Logger {
 	return &zapLogger{module: fmt.Sprintf("%s/%s", s.module, module), minimum: s.minimum}
 }
 
+// Deprecated: Not used in new version
 var levelToInt = map[string]int{
 	"":      -1,
 	"DEBUG": 0,
@@ -76,6 +90,7 @@ var levelToInt = map[string]int{
 	"ERROR": 3,
 }
 
+// Deprecated: Not used in new version
 func InitZapLogger(module string, minLevel string) waLog.Logger {
 	return &zapLogger{
 		module:  module,
@@ -83,6 +98,7 @@ func InitZapLogger(module string, minLevel string) waLog.Logger {
 	}
 }
 
+// Deprecated: Not used in new version
 func Init(c *config.Config, container *sqlstore.Container, db *gorm.DB) *Meow {
 	// init device store
 	store.DeviceProps.PlatformType = waProto.DeviceProps_CHROME.Enum()
@@ -112,6 +128,7 @@ func Init(c *config.Config, container *sqlstore.Container, db *gorm.DB) *Meow {
 	}
 }
 
+// Deprecated: Not used in new version
 func (m *Meow) Connect() {
 	if m.Client.Store.ID == nil {
 		zap.S().Info("No credential found, creating new device")
@@ -147,10 +164,12 @@ func (m *Meow) Connect() {
 	}
 }
 
+// Deprecated: Not used in new version
 func (m *Meow) Exit() {
 	m.Client.Disconnect()
 }
 
+// Deprecated: Not used in new version
 func (m *Meow) SendMessage(message PendingMessage) error {
 	zap.S().Debugf("Sending message with ID: %s and content: %s to: %s", message.MessageId, message.Message, message.To)
 
@@ -170,6 +189,7 @@ func (m *Meow) SendMessage(message PendingMessage) error {
 	return nil
 }
 
+// Deprecated: Not used in new version
 func (m *Meow) eventHandler(evt interface{}) {
 	switch v := evt.(type) {
 

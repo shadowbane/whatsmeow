@@ -135,6 +135,20 @@ func isConnected(user *models.User) bool {
 	return false
 }
 
+func StripJID(arg types.JID) string {
+	jidVal := arg.String()
+
+	if jidVal[0] == '+' {
+		jidVal = jidVal[1:]
+	}
+
+	jidVal = strings.Split(jidVal, "@")[0]
+	jidVal = strings.Split(jidVal, ".")[0]
+	jidVal = strings.Split(jidVal, ":")[0]
+
+	return jidVal
+}
+
 // ParseJID parses a JID from a string.
 func ParseJID(arg string) (types.JID, bool) {
 	if arg == "" {
