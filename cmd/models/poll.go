@@ -34,7 +34,7 @@ func (p *Poll) TableName() string {
 	return "whatsmeow_polls"
 }
 
-// BeforeCreate will set a ULID using helper.NewULID() rather than numeric ID.
+// BeforeCreate will set a ULID using helpers.NewULID() rather than numeric ID.
 // It will check if the ID is already set and if so, it will skip
 func (p *Poll) BeforeCreate(tx *gorm.DB) (err error) {
 	if p.ID == "" {

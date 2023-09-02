@@ -29,7 +29,7 @@ func (m *Message) TableName() string {
 	return "whatsmeow_messages"
 }
 
-// BeforeCreate will set a ULID using helper.NewULID() rather than numeric ID.
+// BeforeCreate will set a ULID using helpers.NewULID() rather than numeric ID.
 // It will check if the ID is already set and if so, it will skip
 func (m *Message) BeforeCreate(tx *gorm.DB) (err error) {
 	if m.ID == "" {
