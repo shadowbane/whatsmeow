@@ -19,7 +19,6 @@ func SendText(app *application.Application) httprouter.Handle {
 		// check if user is connected
 		if wmeow.ClientPointer[user.ID] == nil {
 			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "User not connected")
-
 			return
 		}
 
@@ -27,7 +26,6 @@ func SendText(app *application.Application) httprouter.Handle {
 		client := wmeow.ClientPointer[user.ID].WAClient
 		if !client.IsConnected() || !client.IsLoggedIn() {
 			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "User is not logged in")
-
 			return
 		}
 
