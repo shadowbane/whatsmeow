@@ -14,39 +14,39 @@ import (
 
 func GetQRCode(app *application.Application) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		user := r.Context().Value("user").(models.User)
+		device := r.Context().Value("device").(models.Device)
 
 		printQr, _ := strconv.ParseBool(r.URL.Query().Get("print_qr"))
 
-		if wmeow.ClientPointer[user.ID] == nil {
-			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "User not connected")
+		if wmeow.ClientPointer[device.ID] == nil {
+			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "Device not connected")
 
 			return
 		}
 
-		client := wmeow.ClientPointer[user.ID].WAClient
+		client := wmeow.ClientPointer[device.ID].WAClient
 		if client.IsConnected() && client.IsLoggedIn() {
-			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "User already logged in")
+			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "Device already logged in")
 
 			return
 		}
 
-		if user.QRCode.String == "" {
+		if device.QRCode.String == "" {
 			apiformattertrait.WriteErrorResponse(w, http.StatusNotFound, "No QR Code found. Please wait a few seconds and try again")
 
 			return
 		}
 
 		if !printQr {
-			apiformattertrait.WriteResponse(w, map[string]string{"qrcode": user.QRCode.String})
+			apiformattertrait.WriteResponse(w, map[string]string{"qrcode": device.QRCode.String})
 
 			return
 		} else {
 			w.Header().Set("Content-Type", "image/png")
-			w.Header().Set("Content-Disposition", "attachment; filename=\""+user.Name+".png\"")
+			w.Header().Set("Content-Disposition", "attachment; filename=\""+device.Name+".png\"")
 
 			var png []byte
-			png, err := qrcode.Encode(user.QRCode.String, qrcode.Medium, 256)
+			png, err := qrcode.Encode(device.QRCode.String, qrcode.Medium, 256)
 			if err != nil {
 				apiformattertrait.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
 

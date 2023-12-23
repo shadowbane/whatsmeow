@@ -1,4 +1,4 @@
-package user
+package device
 
 type CreateValidator struct {
 	Name  string `json:"name" validate:"required,alpha,lowercase,min=5,max=20,unique=users/name"`

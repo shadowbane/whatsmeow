@@ -6,12 +6,12 @@ import (
 	"gomeow/pkg/application"
 	"gomeow/pkg/middleware"
 
+	devicecontroller "gomeow/cmd/api/controllers/device"
 	messagecontroller "gomeow/cmd/api/controllers/message"
 	pollcontroller "gomeow/cmd/api/controllers/poll"
 	polldetailcontroller "gomeow/cmd/api/controllers/poll_detail"
 	pollmessagecontroller "gomeow/cmd/api/controllers/pollmessage"
 	sessioncontroller "gomeow/cmd/api/controllers/session"
-	usercontroller "gomeow/cmd/api/controllers/user"
 )
 
 func Get(app *application.Application) *httprouter.Router {
@@ -36,17 +36,17 @@ func Get(app *application.Application) *httprouter.Router {
 
 	// === END DEPRECATED SECTION ===
 
-	// Users
+	// Devices
 	// index
-	mux.GET("/api/v1/user", m.Chain(usercontroller.Index(app), "auth"))
+	mux.GET("/api/v1/device", m.Chain(devicecontroller.Index(app), "auth"))
 	// store
-	mux.POST("/api/v1/user", m.Chain(usercontroller.Store(app), "auth"))
+	mux.POST("/api/v1/device", m.Chain(devicecontroller.Store(app), "auth"))
 	// show
-	mux.GET("/api/v1/user/:id", m.Chain(usercontroller.Show(app), "auth"))
+	mux.GET("/api/v1/device/:id", m.Chain(devicecontroller.Show(app), "auth"))
 	// update
-	mux.PUT("/api/v1/user/:id", m.Chain(usercontroller.Update(app), "auth"))
+	mux.PUT("/api/v1/device/:id", m.Chain(devicecontroller.Update(app), "auth"))
 	// delete
-	mux.DELETE("/api/v1/user/:id", m.Chain(usercontroller.Delete(app), "auth"))
+	mux.DELETE("/api/v1/device/:id", m.Chain(devicecontroller.Delete(app), "auth"))
 
 	// Polls
 	// index

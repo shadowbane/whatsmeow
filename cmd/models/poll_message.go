@@ -11,7 +11,7 @@ type PollMessage struct {
 	ID           string       `json:"id" gorm:"type:char(26);primaryKey;autoIncrement:false"`
 	JID          string       `json:"jid" gorm:"Column:jid;type:varchar(255);not null"`
 	PollId       string       `json:"code" gorm:"Column:poll_id;type:char(26);not null"`
-	UserId       int64        `json:"user_id" gorm:"Column:user_id;type:bigint;not null"`
+	DeviceId     int64        `json:"device_id" gorm:"Column:device_id;type:bigint;not null"`
 	PollDetailId string       `json:"poll_detail_id" gorm:"Column:poll_detail_id;type:char(26)"`
 	MessageId    string       `json:"message_id" gorm:"Column:message_id;type:varchar(255);not null;unique"`
 	Destination  string       `json:"destination" gorm:"Column:destination;not null"`
@@ -26,8 +26,8 @@ type PollMessage struct {
 	UpdatedAt    time.Time    `json:"updated_at" gorm:"type:timestamp"`
 
 	// Associations
-	Poll Poll `json:"poll,omitempty" gorm:"foreignKey:PollId;references:ID;constraint:OnDelete:RESTRICT"`
-	User User `json:"user,omitempty" gorm:"foreignKey:UserId;references:ID;constraint:OnDelete:RESTRICT"`
+	Poll   Poll   `json:"poll,omitempty" gorm:"foreignKey:PollId;references:ID;constraint:OnDelete:RESTRICT"`
+	Device Device `json:"device,omitempty" gorm:"foreignKey:DeviceId;references:ID;constraint:OnDelete:RESTRICT"`
 }
 
 func (p *PollMessage) TableName() string {

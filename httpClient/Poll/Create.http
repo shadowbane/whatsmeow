@@ -1,0 +1,15 @@
+POST {{ protocol }}{{ host }}/api/v1/poll
+Content-Type: application/json
+Accept: application/json
+Authorization: Basic {{ device_id }} {{ device_token }}
+
+{
+  "question": "Is the app working properly?"
+}
+
+> {%
+    let obj = response.body;
+    // client.log("Value: "+JSON.stringify(obj));
+    // client.log("Value: "+obj.data.id);
+    client.global.set("pollId", obj.data.id);
+%}

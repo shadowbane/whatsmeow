@@ -15,18 +15,18 @@ import (
 
 func SendPoll(app *application.Application) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		user := r.Context().Value("user").(models.User)
+		device := r.Context().Value("device").(models.Device)
 
-		//check if user is connected
-		if wmeow.ClientPointer[user.ID] == nil {
-			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "User not connected")
+		//check if device is connected
+		if wmeow.ClientPointer[device.ID] == nil {
+			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "Device not connected")
 			return
 		}
 
-		//check if user is logged in
-		client := wmeow.ClientPointer[user.ID].WAClient
+		//check if device is logged in
+		client := wmeow.ClientPointer[device.ID].WAClient
 		if !client.IsConnected() || !client.IsLoggedIn() {
-			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "User is not logged in")
+			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "Device is not logged in")
 			return
 		}
 
@@ -51,8 +51,8 @@ func SendPoll(app *application.Application) httprouter.Handle {
 
 		// Load Poll
 		poll := models.Poll{
-			ID:     request.PollId,
-			UserId: user.ID,
+			ID:       request.PollId,
+			DeviceId: device.ID,
 		}
 		//var pollDTO models.PollDTO
 		pollDTO := models.PollDTO{
@@ -87,8 +87,8 @@ func SendPoll(app *application.Application) httprouter.Handle {
 		// store
 		message := models.PollMessage{
 			PollId:      request.PollId,
-			JID:         user.JID.String,
-			UserId:      user.ID,
+			JID:         device.JID.String,
+			DeviceId:    device.ID,
 			MessageId:   newMessageId,
 			Destination: request.Destination,
 		}
@@ -102,7 +102,7 @@ func SendPoll(app *application.Application) httprouter.Handle {
 		}
 
 		// send message
-		err = wmeow.ClientPointer[user.ID].SendPollMessage(newMessageId, request.Destination, pollDTO)
+		err = wmeow.ClientPointer[device.ID].SendPollMessage(newMessageId, request.Destination, pollDTO)
 
 		apiformattertrait.WriteResponse(w, &ReturnMessageDTO{
 			ID:          message.ID,

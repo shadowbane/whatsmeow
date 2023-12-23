@@ -1,0 +1,8 @@
+POST {{ protocol }}{{ host }}/api/v1/session/logout
+Content-Type: application/json
+Accept: application/json
+Authorization: Basic {{ device_id }} {{ device_token }}
+
+{}
+
+<> 2023-07-14T160131.200.json

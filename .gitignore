@@ -5,3 +5,4 @@ main
 *.db
 /.idea
 /Temp
+httpClient/http-client.private.env.json

@@ -1,4 +1,4 @@
-package user
+package device
 
 import (
 	"encoding/json"
@@ -30,16 +30,16 @@ func Store(app *application.Application) httprouter.Handle {
 			return
 		}
 
-		// create models.User from request
-		user := models.User{
+		// create models.Device from request
+		user := models.Device{
 			Name:  request.Name,
 			Token: request.Token,
 		}
 
-		// create user
+		// create device
 		result := app.Models.Create(&user)
 		if result.Error != nil {
-			zap.S().Debugf("Error creating user: %+v", result)
+			zap.S().Debugf("Error creating device: %+v", result)
 			apiformattertrait.WriteErrorResponse(w, http.StatusInternalServerError, result.Error.Error())
 			return
 		}

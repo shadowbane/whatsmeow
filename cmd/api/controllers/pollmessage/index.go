@@ -11,8 +11,8 @@ import (
 
 func Index(app *application.Application) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		user := r.Context().Value("user").(models.User)
+		device := r.Context().Value("device").(models.Device)
 
-		apiformattertrait.WriteResponse(w, user)
+		apiformattertrait.WriteResponse(w, device)
 	}
 }

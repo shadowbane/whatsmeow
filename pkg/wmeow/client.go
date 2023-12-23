@@ -24,7 +24,7 @@ type MeowClient struct {
 	DeviceStore    *store.Device
 	eventHandlerID uint32
 	subscriptions  []string
-	User           *models.User
+	Device         *models.Device
 	WAClient       *whatsmeow.Client
 	connection     *connectionContext
 }
@@ -37,19 +37,19 @@ type connectionContext struct {
 // Logout logs out of WAClient
 // Deletes the JID from the DB, and logout connected devices.
 func (mycli *MeowClient) Logout() {
-	mycli.User.IsConnected = false
-	mycli.User.JID = sql.NullString{String: ""}
-	mycli.User.Webhook = sql.NullString{String: ""}
-	result := mycli.DB.Save(&mycli.User)
+	mycli.Device.IsConnected = false
+	mycli.Device.JID = sql.NullString{String: ""}
+	mycli.Device.Webhook = sql.NullString{String: ""}
+	result := mycli.DB.Save(&mycli.Device)
 	if result.Error != nil {
-		zap.S().Errorf("WMEOW\tError updating user: %+v", result)
+		zap.S().Errorf("WMEOW\tError updating device: %+v", result)
 	}
-	KillChannel[mycli.User.ID] <- true
+	KillChannel[mycli.Device.ID] <- true
 	zap.S().Infof("WMEOW\tLogged out of WAClient.")
 }
 
 // ConnectAndLogin connects to the WAClient and logs in if necessary.
-// This will also shows the QR code if the user is not logged in
+// This will also shows the QR code if the device is not logged in
 func (mycli *MeowClient) ConnectAndLogin(err error) (error, bool) {
 	if mycli.WAClient.Store.ID != nil {
 		zap.S().Debugf("WMEOW\tDevice %s already logged in", mycli.WAClient.Store.ID)
@@ -82,42 +82,42 @@ func (mycli *MeowClient) ConnectAndLogin(err error) (error, bool) {
 			for evt := range qrChan {
 				if evt.Event == "code" {
 
-					mycli.User.QRCode = sql.NullString{
+					mycli.Device.QRCode = sql.NullString{
 						String: evt.Code,
 						Valid:  true,
 					}
 
-					result := mycli.DB.Save(&mycli.User)
+					result := mycli.DB.Save(&mycli.Device)
 					if result.Error != nil {
-						zap.S().Errorf("WMEOW\tError updating mycli.User: %+v", result)
+						zap.S().Errorf("WMEOW\tError updating mycli.Device: %+v", result)
 
 						return result.Error, true
 					}
 				} else if evt.Event == "timeout" {
 					// Clear QR code from DB on timeout
-					mycli.User.QRCode = sql.NullString{
+					mycli.Device.QRCode = sql.NullString{
 						String: "",
 					}
 
-					result := mycli.DB.Save(&mycli.User)
+					result := mycli.DB.Save(&mycli.Device)
 					if result.Error != nil {
-						zap.S().Errorf("WMEOW\tError updating mycli.User: %+v", result)
+						zap.S().Errorf("WMEOW\tError updating mycli.Device: %+v", result)
 
 						return result.Error, true
 					}
 
 					zap.S().Errorf("WMEOW\tQR Code Timeout... Killing channel...")
 
-					delete(ClientPointer, mycli.User.ID)
-					KillChannel[mycli.User.ID] <- true
+					delete(ClientPointer, mycli.Device.ID)
+					KillChannel[mycli.Device.ID] <- true
 				} else if evt.Event == "success" {
 					zap.S().Debugf("WMEOW\tQR pairing ok!")
 					// Clear QR code after pairing
-					mycli.User.QRCode = sql.NullString{String: ""}
+					mycli.Device.QRCode = sql.NullString{String: ""}
 
-					result := mycli.DB.Save(&mycli.User)
+					result := mycli.DB.Save(&mycli.Device)
 					if result.Error != nil {
-						zap.S().Errorf("WMEOW\tError updating user: %+v", result)
+						zap.S().Errorf("WMEOW\tError updating device: %+v", result)
 
 						return result.Error, true
 					}

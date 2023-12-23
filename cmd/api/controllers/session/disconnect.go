@@ -10,17 +10,20 @@ import (
 	apiformattertrait "gomeow/cmd/api/controllers/traits"
 )
 
+// Disconnect device from server.
+// This is like closing your WhatsApp web, and user don't need to relog
+// (scan qr code) when reopening / reconnecting.
 func Disconnect(app *application.Application) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		user := r.Context().Value("user").(models.User)
+		device := r.Context().Value("device").(models.Device)
 
-		if wmeow.ClientPointer[user.ID] == nil {
-			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "User not connected")
+		if wmeow.ClientPointer[device.ID] == nil {
+			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "Device not connected")
 
 			return
 		}
 
-		wmeow.KillChannel[user.ID] <- true
+		wmeow.KillChannel[device.ID] <- true
 
 		apiformattertrait.WriteResponse(w, map[string]any{"state": "disconnected"})
 	}

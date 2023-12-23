@@ -1,4 +1,4 @@
-package user
+package device
 
 type CreateRequest struct {
 	Name  string `json:"name"`

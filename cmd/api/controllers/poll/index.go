@@ -16,7 +16,7 @@ func Index(app *application.Application) httprouter.Handle {
 		var pollCollection []models.PollDTO
 
 		result := app.Models.
-			Where("user_id = ?", r.Context().Value("user").(models.User).ID).
+			Where("device_id = ?", r.Context().Value("device").(models.Device).ID).
 			Preload("Details").
 			Find(&polls)
 

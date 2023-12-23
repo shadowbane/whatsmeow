@@ -5,8 +5,9 @@ import (
 	"time"
 )
 
-type User struct {
+type Device struct {
 	ID          int64          `json:"id" gorm:"auto_increment;primary_key"`
+	Code        string         `json:"code" gorm:"Column:code;type:varchar(255);unique" valid:"required,stringlength(15|20)"`
 	Name        string         `json:"name" gorm:"Column:name;type:varchar(255);not null" valid:"required"`
 	Token       string         `json:"token" gorm:"Column:token;type:text;not null" valid:"required,stringlength(15|20)"`
 	Webhook     sql.NullString `json:"webhook" gorm:"Column:webhook;type:text"`
@@ -19,6 +20,6 @@ type User struct {
 	UpdatedAt   time.Time      `json:"updated_at" gorm:"type:timestamp"`
 }
 
-func (u *User) TableName() string {
-	return "whatsmeow_users"
+func (u *Device) TableName() string {
+	return "whatsmeow_devices"
 }

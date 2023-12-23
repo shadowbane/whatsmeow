@@ -13,15 +13,15 @@ import (
 
 func Logout(app *application.Application) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		user := r.Context().Value("user").(models.User)
+		device := r.Context().Value("device").(models.Device)
 
-		if wmeow.ClientPointer[user.ID] == nil {
-			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "User not connected")
+		if wmeow.ClientPointer[device.ID] == nil {
+			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "Device not connected")
 
 			return
 		}
 
-		client := wmeow.ClientPointer[user.ID].WAClient
+		client := wmeow.ClientPointer[device.ID].WAClient
 		if client.IsConnected() && client.IsLoggedIn() {
 			err := client.Logout()
 			if err != nil {
@@ -31,14 +31,14 @@ func Logout(app *application.Application) httprouter.Handle {
 				return
 			}
 
-			wmeow.ClientPointer[user.ID].Logout()
-			zap.S().Infof("User %s with JID %s Logged Out", user.Name, user.JID.String)
+			wmeow.ClientPointer[device.ID].Logout()
+			zap.S().Infof("Device %s with JID %s Logged Out", device.Name, device.JID.String)
 		} else {
 			if client.IsConnected() {
-				zap.S().Infof("User %s is not logged in. Doing logout anyway", user.Name)
-				wmeow.KillChannel[user.ID] <- true
+				zap.S().Infof("Device %s is not logged in. Doing logout anyway", device.Name)
+				wmeow.KillChannel[device.ID] <- true
 			} else {
-				apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "User not connected")
+				apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "Device not connected")
 
 				return
 			}

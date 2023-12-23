@@ -33,7 +33,7 @@ func Start() (*Application, error) {
 	zap.S().Debug("Running auto migration")
 	err := database.AutoMigrate([]interface{}{
 		&models.Message{},
-		&models.User{},
+		&models.Device{},
 		&models.Poll{},
 		&models.PollDetail{},
 		&models.PollMessage{},

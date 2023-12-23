@@ -1,0 +1,9 @@
+POST {{ protocol }}{{ host }}/api/v1/message/poll
+Content-Type: application/json
+Accept: application/json
+Authorization: Basic {{ device_id }} {{ device_token }}
+
+{
+  "destination": "{{ message_destination }}",
+  "poll_id": "{{ pollId }}"
+}

@@ -1,4 +1,4 @@
-package user
+package device
 
 import (
 	"github.com/julienschmidt/httprouter"
@@ -12,7 +12,7 @@ import (
 func Index(app *application.Application) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
-		var users []models.User
+		var users []models.Device
 
 		result := app.Models.Find(&users)
 

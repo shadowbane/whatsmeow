@@ -14,12 +14,12 @@ import (
 
 func Connect(app *application.Application) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		user := r.Context().Value("user").(models.User)
+		device := r.Context().Value("device").(models.Device)
 		eventstring := ""
 
-		// if user already connected, return error
-		if wmeow.ClientPointer[user.ID] != nil {
-			apiformattertrait.WriteErrorResponse(w, http.StatusUnprocessableEntity, "User already connected")
+		// if device already connected, return error
+		if wmeow.ClientPointer[device.ID] != nil {
+			apiformattertrait.WriteErrorResponse(w, http.StatusUnprocessableEntity, "Device already connected")
 
 			return
 		}
@@ -28,21 +28,21 @@ func Connect(app *application.Application) httprouter.Handle {
 		subscribedEvents = append(subscribedEvents, "All")
 		eventstring = strings.Join(subscribedEvents, ",")
 
-		user.Events = eventstring
-		result := app.Models.Save(&user)
+		device.Events = eventstring
+		result := app.Models.Save(&device)
 		if result.Error != nil {
-			zap.S().Debugf("Error updating user: %+v", result)
+			zap.S().Debugf("Error updating device: %+v", result)
 			apiformattertrait.WriteErrorResponse(w, http.StatusInternalServerError, result.Error.Error())
 			return
 		}
 
 		go func() {
-			err := wmeow.StartClient(&user, app, user.JID.String, subscribedEvents)
+			err := wmeow.StartClient(&device, app, device.JID.String, subscribedEvents)
 			if err != nil {
 				zap.S().Errorf("Error starting client: %+v", err)
 			}
 		}()
 
-		apiformattertrait.WriteResponse(w, map[string]any{"id": user.ID, "state": "connected"})
+		apiformattertrait.WriteResponse(w, map[string]any{"id": device.ID, "state": "connected"})
 	}
 }

@@ -1,0 +1,8 @@
+POST {{ protocol }}{{ host }}/api/v1/poll/{{ pollId }}
+Content-Type: application/json
+Accept: application/json
+Authorization: Basic {{ device_id }} {{ device_token }}
+
+{
+  "option": "No"
+}

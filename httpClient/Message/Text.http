@@ -1,0 +1,9 @@
+POST {{ protocol }}{{ host }}/api/v1/message/text
+Content-Type: application/json
+Accept: application/json
+Authorization: Basic {{ device_id }} {{ device_token }}
+
+{
+  "destination": "{{ message_destination }}",
+  "message": "This is a message.\r\n*Please reply as soon as possible!*\r\n\r\nYou've read my message. Please reply!"
+}

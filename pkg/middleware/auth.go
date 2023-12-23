@@ -18,11 +18,11 @@ func (mw *MwStruct) Auth(next httprouter.Handle) httprouter.Handle {
 			return
 		}
 
-		var user models.User
+		var device models.Device
 		result := mw.
 			Models.
-			Where("name = ? AND token = ?", username, token).
-			First(&user)
+			Where("code = ? AND token = ?", username, token).
+			First(&device)
 
 		if result.RowsAffected == 0 {
 			apiformattertrait.WriteErrorResponse(w, http.StatusUnauthorized, "Invalid credentials")
@@ -30,9 +30,9 @@ func (mw *MwStruct) Auth(next httprouter.Handle) httprouter.Handle {
 			return
 		}
 
-		// add user to context
+		// add device to context
 		var ctx context.Context
-		ctx = context.WithValue(r.Context(), "user", user)
+		ctx = context.WithValue(r.Context(), "device", device)
 
 		next(w, r.WithContext(ctx), p)
 	}

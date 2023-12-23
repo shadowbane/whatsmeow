@@ -1,0 +1,6 @@
+POST {{ protocol }}{{ host }}/api/v1/session/disconnect
+Content-Type: application/json
+Accept: application/json
+Authorization: Basic {{ device_id }} {{ device_token }}
+
+{}

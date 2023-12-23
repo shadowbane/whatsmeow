@@ -1,16 +1,16 @@
-package user
+package device
 
 import (
 	"github.com/julienschmidt/httprouter"
-	"gomeow/cmd/models"
 	"gomeow/pkg/application"
 	"net/http"
 
 	apiformattertrait "gomeow/cmd/api/controllers/traits"
 )
 
-func Show(app *application.Application) httprouter.Handle {
+func Delete(app *application.Application) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		w.Header().Set("Content-Type", "application/json")
 
 		// find record in database
 		user, err := findById(app, p.ByName("id"))
@@ -20,18 +20,8 @@ func Show(app *application.Application) httprouter.Handle {
 			return
 		}
 
-		apiformattertrait.WriteResponse(w, user)
-	}
-}
+		app.Models.Delete(&user)
 
-func findById(app *application.Application, id string) (*models.User, error) {
-	var user models.User
-	if err := app.Models.
-		Where("id = ?", id).
-		First(&user).
-		Error; err != nil {
-		return &user, err
+		apiformattertrait.WriteResponse(w, map[string]string{"message": "Device deleted"})
 	}
-
-	return &user, nil
 }

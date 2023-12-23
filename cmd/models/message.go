@@ -10,7 +10,7 @@ import (
 type Message struct {
 	ID          string         `json:"id" gorm:"type:char(26);primaryKey;autoIncrement:false"`
 	JID         string         `json:"jid" gorm:"Column:jid;type:varchar(255);not null"`
-	UserId      int64          `json:"user_id" gorm:"Column:user_id;type:bigint;not null"`
+	DeviceId    int64          `json:"device_id" gorm:"Column:device_id;type:bigint;not null"`
 	MessageId   string         `json:"message_id" gorm:"Column:message_id;type:varchar(255);not null;unique"`
 	Destination string         `json:"destination" gorm:"Column:destination;not null"`
 	Sent        bool           `json:"sent" gorm:"Column:sent;Default:false"`

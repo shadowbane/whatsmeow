@@ -13,7 +13,7 @@ import (
 func Store(app *application.Application) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		var request CreateValidator
-		user := r.Context().Value("user").(models.User)
+		device := r.Context().Value("device").(models.Device)
 
 		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
@@ -23,8 +23,8 @@ func Store(app *application.Application) httprouter.Handle {
 		}
 
 		var poll = models.Poll{
-			ID:     p.ByName("pollId"),
-			UserId: user.ID,
+			ID:       p.ByName("pollId"),
+			DeviceId: device.ID,
 		}
 		result := app.Models.First(&poll)
 

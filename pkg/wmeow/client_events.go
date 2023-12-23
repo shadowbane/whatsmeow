@@ -29,22 +29,32 @@ func (mycli *MeowClient) myEventHandler(rawEvt interface{}) {
 			zap.S().Info("Marked self as available")
 		}
 
-		mycli.User.IsConnected = true
-		result := mycli.DB.Save(&mycli.User)
+		mycli.Device.IsConnected = true
+		result := mycli.DB.Save(&mycli.Device)
 		if result.Error != nil {
-			zap.S().Errorf("WMEOW\tError updating user: %+v", result)
+			zap.S().Errorf("WMEOW\tError updating device: %+v", result)
 		}
+	/**
+	 * Do not handle disconnected event.
+	 */
+	//case *events.Disconnected:
+	//zap.S().Debugf("WMEOW\tReceiving disconnect request")
+	//mycli.Device.IsConnected = false
+	//result := mycli.DB.Save(&mycli.Device)
+	//if result.Error != nil {
+	//	zap.S().Errorf("WMEOW\tError updating device: %+v", result)
+	//}
 	case *events.PairSuccess:
-		zap.S().Infof("WMEOW\tPairing success for %d. JID: %s", mycli.User.ID, evt.ID.String())
-		mycli.User.JID = sql.NullString{
+		zap.S().Infof("WMEOW\tPairing success for %d. JID: %s", mycli.Device.ID, evt.ID.String())
+		mycli.Device.JID = sql.NullString{
 			String: evt.ID.String(),
 			Valid:  true,
 		}
-		mycli.User.IsConnected = true
+		mycli.Device.IsConnected = true
 
-		result := mycli.DB.Save(&mycli.User)
+		result := mycli.DB.Save(&mycli.Device)
 		if result.Error != nil {
-			zap.S().Errorf("WMEOW\tError updating user: %+v", result)
+			zap.S().Errorf("WMEOW\tError updating device: %+v", result)
 		}
 	case *events.StreamReplaced:
 		zap.S().Warnf("Stream Replaced!")
@@ -156,7 +166,7 @@ func (mycli *MeowClient) PollVote(pollVote *waProto.PollVoteMessage, evt *events
 	// Store Poll History
 	result = tx.Save(&models.PollHistory{
 		PollId:       pollMessage.PollId,
-		UserId:       pollMessage.UserId,
+		DeviceId:     pollMessage.DeviceId,
 		PollDetailId: pollMessage.PollDetailId,
 		MessageId:    pollMessage.MessageId,
 		Destination:  pollMessage.Destination,

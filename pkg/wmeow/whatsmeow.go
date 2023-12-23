@@ -17,15 +17,15 @@ import (
 // ClientPointer is a map of whatsmeow clients.
 // This is the heart of the application.
 //
-// Key: UserID
+// Key: DeviceID
 var ClientPointer = make(map[int64]*MeowClient)
 
 var KillChannel = make(map[int64]chan bool)
 
 // StartClient starts a new whatsmeow client.
 // This will open a new connection, essentially creating a new 'web' session.
-func StartClient(user *models.User, app *application.Application, jid string, subscriptions []string) error {
-	if isConnected(user) == true {
+func StartClient(device *models.Device, app *application.Application, jid string, subscriptions []string) error {
+	if isConnected(device) == true {
 		return nil
 	}
 
@@ -63,13 +63,13 @@ func StartClient(user *models.User, app *application.Application, jid string, su
 		DeviceStore:    deviceStore,
 		eventHandlerID: 1,
 		subscriptions:  subscriptions,
-		User:           user,
+		Device:         device,
 		WAClient:       client,
 	}
 	mycli.eventHandlerID = mycli.WAClient.AddEventHandler(mycli.myEventHandler)
-	ClientPointer[user.ID] = &mycli
+	ClientPointer[device.ID] = &mycli
 
-	KillChannel[user.ID] = make(chan bool, 1)
+	KillChannel[device.ID] = make(chan bool, 1)
 
 	zap.S().Debugf("KillChannel: %+v", KillChannel)
 
@@ -88,30 +88,30 @@ func StartClient(user *models.User, app *application.Application, jid string, su
 	}()
 
 	// Keep connected client live until disconnected/killed
-	zap.S().Debugf("WMEOW\tKeeping UserID %d connected", user.ID)
+	zap.S().Debugf("WMEOW\tKeeping DeviceID %d connected", device.ID)
 
 	exithandler.WaitGroup.Add(1)
 
 	// Keep connected client live until disconnected/killed
 	go func() {
-		<-KillChannel[user.ID]
+		<-KillChannel[device.ID]
 
 		mycli.connection.close()
 
-		zap.S().Debugf("WMEOW\tKilling channel with UserID %d", user.ID)
+		zap.S().Debugf("WMEOW\tKilling channel with DeviceID %d", device.ID)
 
 		// Clear QR code after pairing
-		user.QRCode = sql.NullString{
+		device.QRCode = sql.NullString{
 			String: "",
 		}
 
-		result := app.Models.Save(&user)
+		result := app.Models.Save(&device)
 		if result.Error != nil {
-			zap.S().Errorf("WMEOW\tError updating user: %+v", result)
+			zap.S().Errorf("WMEOW\tError updating device: %+v", result)
 		}
 
 		client.Disconnect()
-		delete(ClientPointer, user.ID)
+		delete(ClientPointer, device.ID)
 
 		defer func() {
 			if exithandler.WaitGroup.GetCount() > 0 {
@@ -124,9 +124,9 @@ func StartClient(user *models.User, app *application.Application, jid string, su
 }
 
 // isConnected checks if a client is connected.
-func isConnected(user *models.User) bool {
-	if ClientPointer[user.ID] != nil {
-		isConnected := ClientPointer[user.ID].WAClient.IsConnected()
+func isConnected(device *models.Device) bool {
+	if ClientPointer[device.ID] != nil {
+		isConnected := ClientPointer[device.ID].WAClient.IsConnected()
 		if isConnected == true {
 			return true
 		}
@@ -203,39 +203,39 @@ func ParseJID(arg string) (types.JID, bool) {
 // if the device is logged in, it will be marked as connected
 // and we will auto connect it to whatsapp
 func ConnectOnStartup(app *application.Application) {
-	var users []models.User
+	var devices []models.Device
 	result := app.Models.
 		Where("is_connected = 1").
-		Find(&users)
+		Find(&devices)
 
 	if result.Error != nil {
-		zap.S().Errorf("WMEOW\tError getting users: %+v", result)
+		zap.S().Errorf("WMEOW\tError getting devices: %+v", result)
 
 		panic(result.Error)
 	}
 
-	if len(users) == 0 {
-		zap.S().Debug("WMEOW\tNo users to connect on startup")
+	if len(devices) == 0 {
+		zap.S().Debug("WMEOW\tNo devices to connect on startup")
 
 		return
 	}
 
 	var subscribedEvents []string
 
-	for _, user := range users {
-		zap.S().Debugf("WMEOW\tAuto Connecting user %s", user.Name)
+	for _, device := range devices {
+		zap.S().Debugf("WMEOW\tAuto Connecting device %s", device.Name)
 
-		subscribedEvents = strings.Split(user.Events, ",")
+		subscribedEvents = strings.Split(device.Events, ",")
 
-		go func(user *models.User, app *application.Application, jid string, subscribedEvents []string) {
-			err := StartClient(user, app, jid, subscribedEvents)
+		go func(device *models.Device, app *application.Application, jid string, subscribedEvents []string) {
+			err := StartClient(device, app, jid, subscribedEvents)
 			if err != nil {
 				zap.S().Errorf("WMEOW\tError starting client: %+v", err)
 			}
-		}(&user, app, user.JID.String, subscribedEvents)
+		}(&device, app, device.JID.String, subscribedEvents)
 	}
 
-	zap.S().Debug("WMEOW\tConnected all users on startup")
+	zap.S().Debug("WMEOW\tConnected all devices on startup")
 }
 
 // Shutdown shuts down all clients.

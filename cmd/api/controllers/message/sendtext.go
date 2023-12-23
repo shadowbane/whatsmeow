@@ -14,18 +14,18 @@ import (
 
 func SendText(app *application.Application) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		user := r.Context().Value("user").(models.User)
+		device := r.Context().Value("device").(models.Device)
 
-		// check if user is connected
-		if wmeow.ClientPointer[user.ID] == nil {
-			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "User not connected")
+		// check if device is connected
+		if wmeow.ClientPointer[device.ID] == nil {
+			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "Device not connected")
 			return
 		}
 
-		// check if user is logged in
-		client := wmeow.ClientPointer[user.ID].WAClient
+		// check if device is logged in
+		client := wmeow.ClientPointer[device.ID].WAClient
 		if !client.IsConnected() || !client.IsLoggedIn() {
-			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "User is not logged in")
+			apiformattertrait.WriteErrorResponse(w, http.StatusBadRequest, "Device is not logged in")
 			return
 		}
 
@@ -57,14 +57,14 @@ func SendText(app *application.Application) httprouter.Handle {
 
 		// store
 		message := models.Message{
-			JID:         user.JID.String,
-			UserId:      user.ID,
+			JID:         device.JID.String,
+			DeviceId:    device.ID,
 			MessageId:   newMessageId,
 			Destination: request.Destination,
 			Body:        request.Message,
 		}
 
-		// create user
+		// create message object
 		result := app.Models.Create(&message)
 		if result.Error != nil {
 			zap.S().Debugf("Error creating message: %+v", result)
@@ -72,29 +72,8 @@ func SendText(app *application.Application) httprouter.Handle {
 			return
 		}
 
-		// generate JID from message.Desination
-		//destinationJID, _ := wmeow.ParseJID(message.Destination)
-		//
-		//options := []string{
-		//	0: "Yes",
-		//	1: "No",
-		//}
-		//
-		//// test
-		//pollMsg := client.BuildPollCreation(
-		//	"Test Polling",
-		//	options,
-		//	1,
-		//)
-		//pollData, pollErr := client.SendMessage(context.Background(), destinationJID, pollMsg)
-		//
-		//zap.S().Debugf("PollData: %+v", pollData)
-		//if pollErr != nil {
-		//	zap.S().Errorf("Error sending polling: %+v", pollErr)
-		//}
-
 		// send message
-		err = wmeow.ClientPointer[user.ID].SendTextMessage(newMessageId, request.Destination, request.Message)
+		err = wmeow.ClientPointer[device.ID].SendTextMessage(newMessageId, request.Destination, request.Message)
 
 		returnMessage := &ReturnMessageDTO{
 			MessageId:   newMessageId,

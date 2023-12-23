@@ -1,4 +1,4 @@
-package user
+package device
 
 import (
 	"encoding/json"
@@ -21,10 +21,10 @@ func Update(app *application.Application) httprouter.Handle {
 			return
 		}
 
-		// ensure user is present
+		// ensure device is present
 		user, err := findById(app, p.ByName("id"))
 		if err != nil {
-			apiformattertrait.WriteErrorResponse(w, http.StatusNotFound, "User Not Found")
+			apiformattertrait.WriteErrorResponse(w, http.StatusNotFound, "Device Not Found")
 
 			return
 		}
@@ -43,7 +43,7 @@ func Update(app *application.Application) httprouter.Handle {
 
 		result := app.Models.Save(&user)
 		if result.Error != nil {
-			zap.S().Debugf("Error updating user: %+v", result)
+			zap.S().Debugf("Error updating device: %+v", result)
 			apiformattertrait.WriteErrorResponse(w, http.StatusInternalServerError, result.Error.Error())
 			return
 		}
