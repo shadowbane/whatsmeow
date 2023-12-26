@@ -36,7 +36,6 @@ func Start() (*Application, error) {
 		&models.Device{},
 		&models.Poll{},
 		&models.PollDetail{},
-		&models.PollMessage{},
 		&models.PollHistory{},
 	}...)
 	if err != nil {

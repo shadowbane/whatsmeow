@@ -89,7 +89,7 @@ func (mycli *MeowClient) myEventHandler(rawEvt interface{}) {
 			// Mark poll message as read
 			go func() {
 				for _, messageId := range evt.MessageIDs {
-					mycli.DB.Model(&models.PollMessage{}).
+					mycli.DB.Model(&models.Message{}).
 						Where("message_id = ?", messageId).
 						Update("read", true).
 						Update("read_at", evt.Timestamp)
@@ -132,7 +132,7 @@ func (mycli *MeowClient) PollVote(pollVote *waProto.PollVoteMessage, evt *events
 	pollId := pollData.PollCreationMessageKey.GetId()
 
 	// Get PollMessage from DB
-	var pollMessage models.PollMessage
+	var pollMessage models.Message
 	result := mycli.DB.
 		Preload("Poll").
 		Where("message_id = ?", pollId).

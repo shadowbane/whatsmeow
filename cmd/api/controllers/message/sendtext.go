@@ -34,7 +34,6 @@ func SendText(app *application.Application) httprouter.Handle {
 		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
 			apiformattertrait.WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
-
 			return
 		}
 
@@ -62,6 +61,7 @@ func SendText(app *application.Application) httprouter.Handle {
 			MessageId:   newMessageId,
 			Destination: request.Destination,
 			Body:        request.Message,
+			MessageType: "text",
 		}
 
 		// create message object

@@ -85,12 +85,20 @@ func SendPoll(app *application.Application) httprouter.Handle {
 		newMessageId := client.GenerateMessageID()
 
 		// store
-		message := models.PollMessage{
+		//message := models.PollMessage{
+		//	PollId:      request.PollId,
+		//	JID:         device.JID.String,
+		//	DeviceId:    device.ID,
+		//	MessageId:   newMessageId,
+		//	Destination: request.Destination,
+		//}
+		message := models.Message{
 			PollId:      request.PollId,
 			JID:         device.JID.String,
 			DeviceId:    device.ID,
 			MessageId:   newMessageId,
 			Destination: request.Destination,
+			MessageType: "poll",
 		}
 
 		// create poll message

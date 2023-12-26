@@ -218,14 +218,14 @@ func (mycli *MeowClient) SendPollMessage(messageId string, to string, dto models
 
 		if err != nil {
 			zap.S().Errorf("Error when sending poll message: %s", err.Error())
-			mycli.DB.Model(&models.PollMessage{}).
+			mycli.DB.Model(&models.Message{}).
 				Where("message_id = ?", messageId).
 				Update("failed", true).
 				Update("failed_at", time.Now())
 			return
 		}
 
-		mycli.DB.Model(&models.PollMessage{}).
+		mycli.DB.Model(&models.Message{}).
 			Where("message_id = ?", messageId).
 			Update("sent", true).
 			Update("sent_at", time.Now())
@@ -233,3 +233,7 @@ func (mycli *MeowClient) SendPollMessage(messageId string, to string, dto models
 
 	return nil
 }
+
+//func (mycli *MeowClient) SendImageMessage(messageId string, to) error {
+//
+//}
