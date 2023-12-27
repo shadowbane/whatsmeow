@@ -20,23 +20,6 @@ func Get(app *application.Application) *httprouter.Router {
 
 	mux := httprouter.New()
 
-	// === DEPRECATED SECTION ===
-	// index
-	//mux.GET("/api/v1/messages", controllers.MessageIndex(app))
-
-	// show
-
-	// store
-
-	// update
-
-	// delete
-
-	// solo.wablas.com Compatible API
-	//mux.POST("/api/v2/send-message", m.Chain(controllers.MessageSend(app), "auth", "default"))
-
-	// === END DEPRECATED SECTION ===
-
 	// Devices
 	// index
 	mux.GET("/api/v1/device", m.Chain(devicecontroller.Index(app), "auth"))
