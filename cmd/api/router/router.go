@@ -2,11 +2,12 @@ package router
 
 import (
 	"github.com/julienschmidt/httprouter"
-	"gomeow/cmd/api/controllers"
 	"gomeow/pkg/application"
 	"gomeow/pkg/middleware"
 
 	devicecontroller "gomeow/cmd/api/controllers/device"
+	filecontroller "gomeow/cmd/api/controllers/file"
+	imagecontroller "gomeow/cmd/api/controllers/image"
 	messagecontroller "gomeow/cmd/api/controllers/message"
 	pollcontroller "gomeow/cmd/api/controllers/poll"
 	polldetailcontroller "gomeow/cmd/api/controllers/poll_detail"
@@ -21,7 +22,7 @@ func Get(app *application.Application) *httprouter.Router {
 
 	// === DEPRECATED SECTION ===
 	// index
-	mux.GET("/api/v1/messages", controllers.MessageIndex(app))
+	//mux.GET("/api/v1/messages", controllers.MessageIndex(app))
 
 	// show
 
@@ -32,7 +33,7 @@ func Get(app *application.Application) *httprouter.Router {
 	// delete
 
 	// solo.wablas.com Compatible API
-	mux.POST("/api/v2/send-message", m.Chain(controllers.MessageSend(app), "auth", "default"))
+	//mux.POST("/api/v2/send-message", m.Chain(controllers.MessageSend(app), "auth", "default"))
 
 	// === END DEPRECATED SECTION ===
 
@@ -87,6 +88,14 @@ func Get(app *application.Application) *httprouter.Router {
 	mux.GET("/api/v1/message/poll", m.Chain(pollmessagecontroller.Index(app), "auth"))
 	// send poll
 	mux.POST("/api/v1/message/poll", m.Chain(pollmessagecontroller.SendPoll(app), "auth"))
+
+	// Messages - Image
+	// send image
+	mux.POST("/api/v1/message/image", m.Chain(imagecontroller.SendImage(app), "auth"))
+
+	// Messages - File
+	// send image
+	mux.POST("/api/v1/message/file", m.Chain(filecontroller.SendFile(app), "auth"))
 
 	return mux
 }

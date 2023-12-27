@@ -19,8 +19,9 @@ type Message struct {
 	Subject      sql.NullString `json:"subject,omitempty" gorm:"Column:subject;type:varchar(255);default:null"`
 	Body         string         `json:"body" gorm:"Column:body;type:text;default:null"`
 	File         string         `json:"file;omitempty" gorm:"Column:file;type:text;default:null;comment:For image/file/video message"`
-	PollId       string         `json:"poll_id;omitempty" gorm:"Column:poll_id;type:char(26);not null;comment:For Poll message"`
-	PollDetailId string         `json:"poll_detail_id;omitempty" gorm:"Column:poll_detail_id;type:char(26);comment:For Poll message"`
+	FileName     string         `json:"file_name;omitempty" gorm:"Column:file_name;type:varchar(255);default:null;comment:File name with extension"`
+	PollId       string         `json:"poll_id;omitempty" gorm:"Column:poll_id;type:char(26);default:null;comment:For Poll message"`
+	PollDetailId string         `json:"poll_detail_id;omitempty" gorm:"Column:poll_detail_id;type:char(26);default:null;comment:For Poll message"`
 	MessageType  string         `json:"message_type;omitempty" gorm:"Column:message_type;type:char(15);comment:Message Types"`
 
 	// Timestamps

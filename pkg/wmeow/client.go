@@ -4,14 +4,19 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"github.com/vincent-petithory/dataurl"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/types"
 	"go.uber.org/zap"
+	"gomeow/cmd/dto"
 	"gomeow/cmd/models"
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 	"math/rand"
+	"mime"
+	"net/http"
 	"time"
 
 	waProto "go.mau.fi/whatsmeow/binary/proto"
@@ -136,16 +141,7 @@ func (mycli *MeowClient) SendTextMessage(messageId string, to string, message st
 	zap.S().Debugf("Sending message with ID: %s to: %s", messageId, to)
 
 	go func() {
-		// mark myself as typing
-		_ = mycli.WAClient.SendChatPresence(
-			types.NewJID(to, "s.whatsapp.net"),
-			types.ChatPresenceComposing,
-			types.ChatPresenceMediaText,
-		)
-
-		// sleep between 1 and 10 seconds
-		// ToDo: Implement Queue
-		time.Sleep(time.Duration(rand.Intn(10-1)+1) * time.Second)
+		mycli.markTyping(to)
 
 		_, err := mycli.WAClient.SendMessage(
 			mycli.connection.ctx,
@@ -183,16 +179,7 @@ func (mycli *MeowClient) SendPollMessage(messageId string, to string, dto models
 	zap.S().Debugf("Sending PollMessage with ID: %s to: %s", messageId, to)
 
 	go func() {
-		// mark myself as typing
-		_ = mycli.WAClient.SendChatPresence(
-			types.NewJID(to, "s.whatsapp.net"),
-			types.ChatPresenceComposing,
-			types.ChatPresenceMediaText,
-		)
-
-		// sleep between 1 and 10 seconds
-		// ToDo: Implement Queue
-		time.Sleep(time.Duration(rand.Intn(10-1)+1) * time.Second)
+		mycli.markTyping(to)
 
 		// pluck only the options from pollDTO.Details
 		options := make([]string, len(dto.Details))
@@ -234,6 +221,161 @@ func (mycli *MeowClient) SendPollMessage(messageId string, to string, dto models
 	return nil
 }
 
-//func (mycli *MeowClient) SendImageMessage(messageId string, to) error {
-//
-//}
+// SendImageMessage send image message to a given JID
+func (mycli *MeowClient) SendImageMessage(messageId string, dto *dto.ImageDTO) error {
+	zap.S().Debugf("Sending ImageMessage with ID: %s to: %s", messageId, dto.Destination)
+
+	mycli.markTyping(dto.Destination)
+
+	var uploaded whatsmeow.UploadResponse
+	var fileData []byte
+
+	// upload image
+	dataURL, err := dataurl.DecodeString(dto.Base64Image)
+	if err != nil {
+		zap.S().Debug("Could not decode base64 payload!")
+		return errors.New("could not decode base64 payload")
+	}
+
+	fileData = dataURL.Data
+	uploaded, err = mycli.WAClient.Upload(mycli.connection.ctx, fileData, whatsmeow.MediaImage)
+	if err != nil {
+		zap.S().Debug("Failed to upload image!")
+		return errors.New("could not upload image to WhatsApp server")
+	}
+
+	msg := &waProto.Message{
+		ImageMessage: &waProto.ImageMessage{
+			Caption:       proto.String(dto.Message),
+			Url:           proto.String(uploaded.URL),
+			DirectPath:    proto.String(uploaded.DirectPath),
+			MediaKey:      uploaded.MediaKey,
+			Mimetype:      proto.String(http.DetectContentType(fileData)),
+			FileEncSha256: uploaded.FileEncSHA256,
+			FileSha256:    uploaded.FileSHA256,
+			FileLength:    proto.Uint64(uint64(len(fileData))),
+		},
+	}
+
+	if dto.ContextInfo.StanzaId != nil {
+		msg.ExtendedTextMessage.ContextInfo = &waProto.ContextInfo{
+			StanzaId:      proto.String(*dto.ContextInfo.StanzaId),
+			Participant:   proto.String(*dto.ContextInfo.Participant),
+			QuotedMessage: &waProto.Message{Conversation: proto.String("")},
+		}
+	}
+
+	_, err = mycli.WAClient.SendMessage(
+		mycli.connection.ctx,
+		types.NewJID(dto.Destination, types.DefaultUserServer),
+		msg,
+		whatsmeow.SendRequestExtra{
+			ID:   messageId,
+			Peer: false,
+		})
+
+	if err != nil {
+		zap.S().Errorf("Error when sending text message: %s", err.Error())
+		mycli.DB.Model(&models.Message{}).
+			Where("message_id = ?", messageId).
+			Update("failed", true).
+			Update("failed_at", time.Now())
+		return fmt.Errorf("error when sending text message: %s", err.Error())
+	}
+
+	mycli.DB.Model(&models.Message{}).
+		Where("message_id = ?", messageId).
+		Update("sent", true).
+		Update("sent_at", time.Now())
+
+	return nil
+}
+
+// SendFileMessage send image message to a given JID
+func (mycli *MeowClient) SendFileMessage(messageId string, dto *dto.FileDTO) error {
+	zap.S().Debugf("Sending FileMessage with ID: %s to: %s", messageId, dto.Destination)
+
+	mycli.markTyping(dto.Destination)
+
+	var uploaded whatsmeow.UploadResponse
+	var fileData []byte
+
+	// upload image
+	dataURL, err := dataurl.DecodeString(dto.File)
+	if err != nil {
+		zap.S().Debug("Could not decode base64 payload!")
+		return errors.New("could not decode base64 payload")
+	}
+
+	fileData = dataURL.Data
+	uploaded, err = mycli.WAClient.Upload(mycli.connection.ctx, fileData, whatsmeow.MediaDocument)
+	if err != nil {
+		zap.S().Debug("Failed to upload file!")
+		return errors.New("could not upload file to WhatsApp server")
+	}
+
+	extension, err := mime.ExtensionsByType(http.DetectContentType(fileData))
+	if err != nil {
+		zap.S().Errorf("No extension detected: %s", err.Error())
+		return errors.New("no extension detected")
+	}
+	fileName := dto.FileName + extension[len(extension)-1]
+
+	msg := &waProto.Message{
+		DocumentMessage: &waProto.DocumentMessage{
+			FileName:      &fileName,
+			Url:           proto.String(uploaded.URL),
+			DirectPath:    proto.String(uploaded.DirectPath),
+			MediaKey:      uploaded.MediaKey,
+			Mimetype:      proto.String(http.DetectContentType(fileData)),
+			FileEncSha256: uploaded.FileEncSHA256,
+			FileSha256:    uploaded.FileSHA256,
+			FileLength:    proto.Uint64(uint64(len(fileData))),
+		},
+	}
+
+	if dto.ContextInfo.StanzaId != nil {
+		msg.ExtendedTextMessage.ContextInfo = &waProto.ContextInfo{
+			StanzaId:      proto.String(*dto.ContextInfo.StanzaId),
+			Participant:   proto.String(*dto.ContextInfo.Participant),
+			QuotedMessage: &waProto.Message{Conversation: proto.String("")},
+		}
+	}
+
+	_, err = mycli.WAClient.SendMessage(
+		mycli.connection.ctx,
+		types.NewJID(dto.Destination, types.DefaultUserServer),
+		msg,
+		whatsmeow.SendRequestExtra{
+			ID:   messageId,
+			Peer: false,
+		})
+
+	if err != nil {
+		zap.S().Errorf("Error when sending text message: %s", err.Error())
+		mycli.DB.Model(&models.Message{}).
+			Where("message_id = ?", messageId).
+			Update("failed", true).
+			Update("failed_at", time.Now())
+		return fmt.Errorf("error when sending text message: %s", err.Error())
+	}
+
+	mycli.DB.Model(&models.Message{}).
+		Where("message_id = ?", messageId).
+		Update("sent", true).
+		Update("sent_at", time.Now()).
+		Update("file_name", &fileName)
+
+	return nil
+}
+
+// markTyping mark myself as typing, and add random delay before sending message
+func (mycli *MeowClient) markTyping(to string) {
+	_ = mycli.WAClient.SendChatPresence(
+		types.NewJID(to, "s.whatsapp.net"),
+		types.ChatPresenceComposing,
+		types.ChatPresenceMediaText,
+	)
+
+	time.Sleep(time.Duration(rand.Intn(10-1)+1) * time.Second)
+}

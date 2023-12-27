@@ -84,14 +84,7 @@ func SendPoll(app *application.Application) httprouter.Handle {
 		// generate new messageID
 		newMessageId := client.GenerateMessageID()
 
-		// store
-		//message := models.PollMessage{
-		//	PollId:      request.PollId,
-		//	JID:         device.JID.String,
-		//	DeviceId:    device.ID,
-		//	MessageId:   newMessageId,
-		//	Destination: request.Destination,
-		//}
+		// create message object
 		message := models.Message{
 			PollId:      request.PollId,
 			JID:         device.JID.String,
@@ -111,6 +104,11 @@ func SendPoll(app *application.Application) httprouter.Handle {
 
 		// send message
 		err = wmeow.ClientPointer[device.ID].SendPollMessage(newMessageId, request.Destination, pollDTO)
+		if err != nil {
+			zap.S().Debugf("Error sending message: %+v", result)
+			apiformattertrait.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 
 		apiformattertrait.WriteResponse(w, &ReturnMessageDTO{
 			ID:          message.ID,

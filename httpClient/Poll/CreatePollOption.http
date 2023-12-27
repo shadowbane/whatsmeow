@@ -4,5 +4,5 @@ Accept: application/json
 Authorization: Basic {{ device_id }} {{ device_token }}
 
 {
-  "option": "No"
+  "option": "no"
 }

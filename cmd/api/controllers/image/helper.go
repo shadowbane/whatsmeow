@@ -1,9 +1,4 @@
-package message
-
-type TextMessage struct {
-	Destination string `json:"destination" validate:"required,numeric,min=5,max=20"`
-	Message     string `json:"message" validate:"required"`
-}
+package image
 
 type ReturnMessageDTO struct {
 	ID          string `json:"id"`

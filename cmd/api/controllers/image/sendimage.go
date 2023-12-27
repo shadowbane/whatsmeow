@@ -1,18 +1,18 @@
-package message
+package image
 
 import (
 	"encoding/json"
 	"github.com/julienschmidt/httprouter"
 	"go.uber.org/zap"
+	apiformattertrait "gomeow/cmd/api/controllers/traits"
+	"gomeow/cmd/dto"
 	"gomeow/cmd/models"
 	"gomeow/pkg/application"
 	"gomeow/pkg/wmeow"
 	"net/http"
-
-	apiformattertrait "gomeow/cmd/api/controllers/traits"
 )
 
-func SendText(app *application.Application) httprouter.Handle {
+func SendImage(app *application.Application) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		device := r.Context().Value("device").(models.Device)
 
@@ -29,23 +29,33 @@ func SendText(app *application.Application) httprouter.Handle {
 			return
 		}
 
-		// create request instance
-		var request TextMessage
-		err := json.NewDecoder(r.Body).Decode(&request)
+		var imageDTO dto.ImageDTO
+		err := json.NewDecoder(r.Body).Decode(&imageDTO)
 		if err != nil {
 			apiformattertrait.WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
 			return
 		}
 
 		// convert phone number to acceptable format
-		request.Destination = stripPhoneNumber(request.Destination)
+		imageDTO.Destination = stripPhoneNumber(imageDTO.Destination)
+		//recipient, err := validateMessageFields(request.Destination, &request.ContextInfo)
+		if err != nil {
+			zap.S().Debugf("Invalid destination number: %s", imageDTO.Destination)
+			apiformattertrait.WriteMultipleErrorResponse(w, http.StatusUnprocessableEntity, "Invalid destination number")
+			return
+		}
 
 		// validating request
-		validationError := app.Validator.Validate(request)
+		validationError := app.Validator.Validate(imageDTO)
 		if validationError != nil {
 			zap.S().Debugf("Error validating request: %+v", validationError)
 			apiformattertrait.WriteMultipleErrorResponse(w, http.StatusUnprocessableEntity, validationError)
+			return
+		}
 
+		if imageDTO.Base64Image[0:10] != "data:image" {
+			zap.S().Debugf("Image data should start with \"data:image\"")
+			apiformattertrait.WriteErrorResponse(w, http.StatusUnprocessableEntity, "Image data should start with \"data:image\"")
 			return
 		}
 
@@ -59,10 +69,12 @@ func SendText(app *application.Application) httprouter.Handle {
 			JID:         device.JID.String,
 			DeviceId:    device.ID,
 			MessageId:   newMessageId,
-			Destination: request.Destination,
-			Body:        request.Message,
-			MessageType: "text",
+			Destination: imageDTO.Destination,
+			Body:        imageDTO.Message,
+			MessageType: "image",
 		}
+
+		message.File = storeFile(&imageDTO)
 
 		// store
 		result := app.Models.Create(&message)
@@ -73,28 +85,18 @@ func SendText(app *application.Application) httprouter.Handle {
 		}
 
 		// send message
-		err = wmeow.ClientPointer[device.ID].SendTextMessage(newMessageId, request.Destination, request.Message)
-		if err != nil {
-			zap.S().Debugf("Error sending message: %+v", result)
-			apiformattertrait.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
-			return
-		}
+		err = wmeow.ClientPointer[device.ID].SendImageMessage(newMessageId, &imageDTO)
 
-		returnMessage := &ReturnMessageDTO{
+		apiformattertrait.WriteResponse(w, &ReturnMessageDTO{
 			MessageId:   newMessageId,
-			Destination: request.Destination,
-			Message:     request.Message,
-			Sent:        message.Sent,
-			Read:        message.Read,
-			Failed:      message.Failed,
-		}
-
-		returnMessage.ReadAt = ""
-
-		if message.ReadAt.Valid {
-			returnMessage.ReadAt = message.ReadAt.Time.String()
-		}
-
-		apiformattertrait.WriteResponse(w, returnMessage)
+			Destination: imageDTO.Destination,
+			Message:     imageDTO.Message,
+		})
 	}
+}
+
+// storeFile handle store file here.
+// Returns path to file.
+func storeFile(imageMessage *dto.ImageDTO) string {
+	return ""
 }
