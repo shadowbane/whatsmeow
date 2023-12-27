@@ -40,6 +40,3 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	rsc.io/qr v0.2.0 // indirect
 )
-
-// Use local path for github.com/shadowbane/go-logger
-replace github.com/shadowbane/go-logger => /Users/adliifkar/projects/go/go-logger

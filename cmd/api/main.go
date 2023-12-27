@@ -23,6 +23,7 @@ func main() {
 	// load .env
 	if err := godotenv.Load(); err != nil {
 		fmt.Printf("Error loading .env file: %v\n", err)
+		fmt.Println("Please ensure you load correct environment variables")
 	}
 
 	// start application
@@ -50,15 +51,6 @@ func main() {
 	// if the device is logged in, it will be marked as connected
 	// and we will auto connect it to whatsapp
 	wmeow.ConnectOnStartup(app)
-
-	// ToDo: Move after device is connected
-	// each device should have their own queue
-	// queue runner
-	// will run every second
-	//go func() {
-	//	zap.S().Info("starting queue runner")
-	//	app.RunQueue()
-	//}()
 
 	exithandler.Init(func() {
 		zap.S().Info("Closing Application")

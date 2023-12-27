@@ -70,12 +70,12 @@ func Get() *Config {
 
 	// If the log level is not set, set it to the value of conf.appEnv
 	if getenv("LOG_LEVEL", "") == "" {
-		os.Setenv("LOG_LEVEL", getDefaultLogLevel(conf.appEnv))
+		_ = os.Setenv("LOG_LEVEL", getDefaultLogLevel(conf.appEnv))
 	}
 
 	// If the log directory is not set, set it to storage/logs
 	if getenv("LOG_DIRECTORY", "") == "" {
-		os.Setenv("LOG_DIRECTORY", "storage/logs")
+		_ = os.Setenv("LOG_DIRECTORY", "storage/logs")
 	}
 
 	flag.StringVar(&conf.logLevel, "log level", getenv("LOG_LEVEL", "info"), "Log level")
