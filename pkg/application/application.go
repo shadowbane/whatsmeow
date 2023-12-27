@@ -43,15 +43,8 @@ func Start() (*Application, error) {
 		panic(err)
 	}
 
-	// ToDo: Add a way to load all the users from the database
-	// Then, connect each device in their own goroutine
-	// Every goroutine should have their own Meow instance, and their own queue
-	//waEngine := whatsmeow.Init(cfg, meowdb, database)
-	//waEngine.Connect()
-
 	app := &Application{
-		DB: meowdb,
-		//Meow:   waEngine,
+		DB:     meowdb,
 		Cfg:    cfg,
 		Queue:  queue,
 		Models: database,
@@ -66,6 +59,7 @@ func (app *Application) InitValidator() {
 	app.Validator = validator.InitValidator(app.Models)
 }
 
+// Deprecated: Unused
 func (app *Application) LoadQueue(jid string) {
 	zap.S().Info("Loading queue")
 
@@ -86,6 +80,7 @@ func (app *Application) LoadQueue(jid string) {
 	}
 }
 
+// Deprecated: Unused
 func (app *Application) RunQueue() {
 	/**
 	 * For now, run the queue every second
@@ -106,6 +101,7 @@ func (app *Application) RunQueue() {
 	}
 }
 
+// Deprecated: Unused
 func (app *Application) SendMeow() {
 	messageLength := app.Queue.Messages.Len()
 
@@ -131,10 +127,12 @@ func (app *Application) SendMeow() {
 	}
 }
 
+// Deprecated: Unused
 func (app *Application) RemoveFromQueue(e *list.Element) {
 	app.Queue.Messages.Remove(e)
 }
 
+// Deprecated: Unused
 func (app *Application) MarkAsSent(e *list.Element) {
 
 	zap.S().Debugf("Marking message as sent")

@@ -13,6 +13,7 @@ require (
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/shadowbane/go-logger v0.1.0-alpha
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
+	github.com/vincent-petithory/dataurl v1.0.0
 	go.mau.fi/whatsmeow v0.0.0-20231216213200-9d803dd92735
 	go.uber.org/zap v1.25.0
 	google.golang.org/protobuf v1.32.0
@@ -30,7 +31,6 @@ require (
 	github.com/leodido/go-urn v1.2.4 // indirect
 	go.mau.fi/libsignal v0.1.0 // indirect
 	go.mau.fi/util v0.2.1 // indirect
-	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/net v0.19.0 // indirect

@@ -34,8 +34,9 @@ type Config struct {
 	dbSlowQueryThreshold   int
 	dbParameterizedQueries bool
 
-	apiPort  string
-	logLevel string
+	apiPort      string
+	logLevel     string
+	logDirectory string
 
 	waLogLevel string
 }
@@ -72,7 +73,13 @@ func Get() *Config {
 		os.Setenv("LOG_LEVEL", getDefaultLogLevel(conf.appEnv))
 	}
 
+	// If the log directory is not set, set it to storage/logs
+	if getenv("LOG_DIRECTORY", "") == "" {
+		os.Setenv("LOG_DIRECTORY", "storage/logs")
+	}
+
 	flag.StringVar(&conf.logLevel, "log level", getenv("LOG_LEVEL", "info"), "Log level")
+	flag.StringVar(&conf.logDirectory, "log directory", getenv("LOG_DIRECTORY", "storage/logs"), "Log Directory")
 	flag.StringVar(&conf.waLogLevel, "whatsapp log level", getenv("WA_LOG_LEVEL", "error"), "WhatsApp Log level")
 
 	// load logger config
