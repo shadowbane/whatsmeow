@@ -35,6 +35,7 @@ type Config struct {
 	dbParameterizedQueries bool
 
 	apiPort      string
+	grpcPort     string
 	logLevel     string
 	logDirectory string
 
@@ -52,6 +53,9 @@ func Get() *Config {
 
 	/** API Port Config **/
 	flag.StringVar(&conf.apiPort, "apiPort", getenv("API_PORT", "8080"), "API Port")
+
+	/** gRPC Port Config **/
+	flag.StringVar(&conf.grpcPort, "grpcPort", getenv("GRPC_PORT", "8090"), "gRPC Port")
 
 	/**
 	 * Models Database - MySQL
@@ -127,6 +131,10 @@ func (c *Config) GetMySQLConnectionString() string {
 
 func (c *Config) GetAPIPort() string {
 	return ":" + c.apiPort
+}
+
+func (c *Config) GetGrpcPort() string {
+	return ":" + c.grpcPort
 }
 
 func (c *Config) GetLogLevel() string {

@@ -1,0 +1,32 @@
+syntax = "proto3";
+package dto;
+
+option go_package = "cmd/common/dto";
+option php_namespace ="App\\Grpc";
+
+enum State {
+  CONNECTED = 0;
+  DISCONNECTED = 1;
+  LOGGED_OUT = 2;
+}
+
+message SessionState {
+  State state = 1;
+}
+
+message SessionRequest {
+  string id = 1;
+  State state = 2;
+}
+
+message SessionResponse {
+  string message = 1;
+  string id = 2;
+  string state = 3;
+}
+
+service SessionService {
+  rpc Connect (SessionRequest) returns (SessionResponse) {}
+  rpc Disconnect (SessionRequest) returns (SessionResponse) {}
+  rpc Logout (SessionRequest) returns (SessionResponse) {}
+}

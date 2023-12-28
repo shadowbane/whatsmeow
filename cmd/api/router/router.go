@@ -15,7 +15,7 @@ import (
 	sessioncontroller "gomeow/cmd/api/controllers/session"
 )
 
-func Get(app *application.Application) *httprouter.Router {
+func Api(app *application.Application) *httprouter.Router {
 	m := middleware.InitMiddlewareList(app.Models)
 
 	mux := httprouter.New()

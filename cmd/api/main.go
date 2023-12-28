@@ -9,6 +9,7 @@ import (
 	"gomeow/cmd/api/router"
 	"gomeow/pkg/application"
 	"gomeow/pkg/exithandler"
+	"gomeow/pkg/grpc"
 	"gomeow/pkg/server"
 	"gomeow/pkg/wmeow"
 	"runtime"
@@ -35,14 +36,28 @@ func main() {
 	srv := server.
 		Get().
 		WithAddr(app.Cfg.GetAPIPort()).
-		WithRouter(router.Get(app)).
+		WithRouter(router.Api(app)).
 		WithErrLogger(zap.S())
 
-	// start the server
+	// Init gRPC server
+	grpcServer := grpc.
+		Get().
+		WithAddr(app.Cfg.GetGrpcPort())
+
+	// start the api server
 	go func() {
-		zap.S().Info("starting server at ", app.Cfg.GetAPIPort())
+		zap.S().Info("starting api server at ", app.Cfg.GetAPIPort())
 
 		if err := srv.Start(); err != nil {
+			zap.S().Warn(err.Error())
+		}
+	}()
+
+	// start the grpc server
+	go func() {
+		zap.S().Info("starting grpc server at ", app.Cfg.GetGrpcPort())
+
+		if err := grpcServer.Start(app); err != nil {
 			zap.S().Warn(err.Error())
 		}
 	}()
@@ -63,6 +78,9 @@ func main() {
 		wmeow.Shutdown()
 
 		if err := srv.Close(); err != nil {
+			zap.S().Error(err.Error())
+		}
+		if err := grpcServer.Close(); err != nil {
 			zap.S().Error(err.Error())
 		}
 
