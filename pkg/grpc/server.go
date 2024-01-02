@@ -1,11 +1,14 @@
 package grpc
 
 import (
+	"context"
+	"errors"
 	"go.uber.org/zap"
 	"gomeow/cmd/api/router"
 	"gomeow/pkg/application"
 	"google.golang.org/grpc"
 	"net"
+	"time"
 )
 
 type Server struct {
@@ -58,7 +61,15 @@ func (s *Server) Start(app *application.Application) error {
 }
 
 func (s *Server) Close() error {
-	s.srv.GracefulStop()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	return nil
+	select {
+	case <-ctx.Done():
+		return errors.New("lock wait timeout exceeded. exiting anyway")
+	default:
+		s.srv.GracefulStop()
+		zap.S().Warn("grpc: server closed")
+		return nil
+	}
 }

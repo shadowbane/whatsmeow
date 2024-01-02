@@ -26,7 +26,7 @@ func (mycli *MeowClient) myEventHandler(rawEvt interface{}) {
 		if err != nil {
 			zap.S().Errorf("WMEOW\tFailed to send available presence: %+v", err)
 		} else {
-			zap.S().Info("Marked self as available")
+			zap.S().Debug("Marked self as available")
 		}
 
 		mycli.Device.IsConnected = true
@@ -103,17 +103,17 @@ func (mycli *MeowClient) myEventHandler(rawEvt interface{}) {
 		mycli.Logout()
 	case *events.ChatPresence:
 	case *events.CallOffer:
-		zap.S().Infof("Got CallOffer event - %+v", evt)
+		zap.S().Debugf("WMEOW\tGot CallOffer event - %+v", evt)
 	case *events.CallAccept:
-		zap.S().Infof("Got CallAccept event - %+v", evt)
+		zap.S().Debugf("WMEOW\tGot CallAccept event - %+v", evt)
 	case *events.CallTerminate:
-		zap.S().Infof("Got CallTerminate event - %+v", evt)
+		zap.S().Debugf("WMEOW\tGot CallTerminate event - %+v", evt)
 	case *events.CallOfferNotice:
-		zap.S().Infof("Got CallOfferNotice event - %+v", evt)
+		zap.S().Debugf("WMEOW\tGot CallOfferNotice event - %+v", evt)
 	case *events.CallRelayLatency:
-		zap.S().Infof("Got CallRelayLatency event - %+v", evt)
+		zap.S().Debugf("WMEOW\tGot CallRelayLatency event - %+v", evt)
 	default:
-		zap.S().Debugf("WMEOW\tUnhandled event: %v", evt)
+		zap.S().Debugf("WMEOW\tUnhandled event: %+v", evt)
 
 	}
 }

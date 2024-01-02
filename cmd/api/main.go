@@ -84,10 +84,8 @@ func main() {
 			zap.S().Error(err.Error())
 		}
 
-		//select {
-		//case <-ctx.Done():
-		//	zap.S().Debugf("Gracefully closed")
-		//}
 		zap.S().Info("Application Closed")
 	})
+
+	zap.S().Info("Bye!")
 }

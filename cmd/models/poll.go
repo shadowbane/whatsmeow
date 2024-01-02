@@ -42,7 +42,7 @@ func (p *Poll) BeforeCreate(tx *gorm.DB) (err error) {
 	}
 
 	if p.Code == "" {
-		p.Code = RandStringBytesMaskImprSrcSB(2)
+		p.Code = RandStringBytesMaskImprSrcSB(5)
 	}
 
 	return nil
