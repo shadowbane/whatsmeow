@@ -11,7 +11,7 @@ require (
 	github.com/shadowbane/go-logger v0.1.0-alpha
 	go.mau.fi/whatsmeow v0.0.0-20230621213630-12cd3cdb2257
 	go.uber.org/zap v1.24.0
-	google.golang.org/protobuf v1.30.0
+	google.golang.org/protobuf v1.33.0
 )
 
 require (
